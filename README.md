@@ -35,7 +35,7 @@ Reforge is designed around a few core ideas:
 - Make Git history easier to understand visually
 - Keep common workflows simple and fast
 - Reduce friction around merges and conflict resolution
-- Provide a polished desktop experience instead of a browser-like tool
+- Provide a polished desktop experience
 
 ## Planned Features
 
@@ -43,6 +43,7 @@ Reforge is designed around a few core ideas:
 - **File History View**
 - **Revert**
 - **Submodules**
+- **And probably much more**
 
 ## Status
 
