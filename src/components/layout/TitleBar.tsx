@@ -76,6 +76,7 @@ export function TitleBar() {
       label: 'File',
       items: [
         { label: 'Open folder', action: () => window.system.selectFolder() },
+        { label: 'Settings', action: () => window.system.openSettings() },
         { separator: true },
         { label: 'Quit', action: () => window.system.quit() },
       ]

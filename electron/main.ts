@@ -151,9 +151,23 @@ function setTheme(theme: 'light' | 'dark') {
   currentSettings.theme = theme
   saveSettings(currentSettings)
   
-  // Notify all windows
+  const isDark = theme === 'dark'
+  const overlayOptions = {
+    color: isDark ? '#17181C' : '#FFFFFF',
+    symbolColor: isDark ? '#A1A1AA' : '#52525B',
+    height: 32
+  }
+
+  // Notify all windows and update their title bar overlay
   BrowserWindow.getAllWindows().forEach(window => {
     window.webContents.send('system:theme-updated', theme)
+    if (process.platform === 'win32') {
+      try {
+        window.setTitleBarOverlay(overlayOptions)
+      } catch (e) {
+        // Some windows might not have overlay enabled
+      }
+    }
   })
   
   // Update the menu to reflect the selection
@@ -263,6 +277,12 @@ app.whenReady().then(() => {
     {
       label: 'File',
       submenu: [
+        {
+          label: 'Settings',
+          accelerator: 'CmdOrCtrl+,',
+          click: () => createSettingsWindow()
+        },
+        { type: 'separator' },
         isMac ? { role: 'close' } : { role: 'quit' }
       ]
     },
@@ -439,6 +459,14 @@ app.whenReady().then(() => {
 
   ipcMain.on('system:close', () => {
     win?.close()
+  })
+
+  ipcMain.on('system:setTheme', (_event, theme: 'light' | 'dark') => {
+    setTheme(theme)
+  })
+
+  ipcMain.on('system:openSettings', () => {
+    createSettingsWindow()
   })
 
   ipcMain.on('system:zoom-in', () => {
@@ -810,6 +838,12 @@ app.whenReady().then(() => {
       webPreferences: {
         preload: path.join(__dirname, 'preload.mjs'),
       },
+      titleBarStyle: 'hidden',
+      titleBarOverlay: {
+        color: currentSettings.theme === 'dark' ? '#17181C' : '#FFFFFF',
+        symbolColor: currentSettings.theme === 'dark' ? '#A1A1AA' : '#52525B',
+        height: 32
+      },
       // Remove menu for the merge tool
       autoHideMenuBar: true
     })
@@ -826,6 +860,48 @@ app.whenReady().then(() => {
 
     return true
   })
+
+  function createSettingsWindow() {
+    const width = 600
+    const height = 450
+    const mainBounds = win?.getBounds()
+    
+    let x: number | undefined
+    let y: number | undefined
+    
+    if (mainBounds) {
+      x = Math.floor(mainBounds.x + (mainBounds.width - width) / 2)
+      y = Math.floor(mainBounds.y + (mainBounds.height - height) / 2)
+    }
+
+    const settingsWin = new BrowserWindow({
+      width,
+      height,
+      x,
+      y,
+      title: 'Settings',
+      icon: path.join(process.env.VITE_PUBLIC, 'app_icon.png'),
+      resizable: false,
+      minimizable: false,
+      maximizable: false,
+      autoHideMenuBar: true,
+      webPreferences: {
+        preload: path.join(__dirname, 'preload.mjs'),
+      },
+      titleBarStyle: 'hidden',
+      titleBarOverlay: {
+        color: currentSettings.theme === 'dark' ? '#17181C' : '#FFFFFF',
+        symbolColor: currentSettings.theme === 'dark' ? '#A1A1AA' : '#52525B',
+        height: 32
+      },
+    })
+
+    const url = VITE_DEV_SERVER_URL 
+      ? `${VITE_DEV_SERVER_URL}?settings=true`
+      : `file://${path.join(RENDERER_DIST, 'index.html')}?settings=true`
+
+    settingsWin.loadURL(url)
+  }
 
   createWindow()
 })

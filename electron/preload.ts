@@ -118,6 +118,8 @@ const systemApi: SystemAPI = {
   zoomOut: () => ipcRenderer.send('system:zoom-out'),
   zoomReset: () => ipcRenderer.send('system:zoom-reset'),
   toggleFullScreen: () => ipcRenderer.send('system:toggle-fullscreen'),
+  setTheme: (theme) => ipcRenderer.send('system:setTheme', theme),
+  openSettings: () => ipcRenderer.send('system:openSettings'),
 }
 
 contextBridge.exposeInMainWorld('git', gitApi)

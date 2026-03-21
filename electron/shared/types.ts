@@ -238,4 +238,6 @@ export interface SystemAPI {
   zoomOut(): void
   zoomReset(): void
   toggleFullScreen(): void
+  setTheme(theme: 'light' | 'dark'): void
+  openSettings(): void
 }

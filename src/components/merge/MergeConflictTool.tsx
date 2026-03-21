@@ -310,8 +310,8 @@ export function MergeConflictTool({
           font-family: var(--font-ui);
         }
         .conflict-tool-layout.standalone {
-          height: 100vh;
-          width: 100vw;
+          height: 100%;
+          width: 100%;
         }
         .conflict-sidebar {
           width: 250px;

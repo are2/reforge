@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { ThemeProvider } from './hooks/useTheme'
 import { useGitData } from './hooks/useGitData'
 import { MergeConflictTool } from './components/merge/MergeConflictTool'
+import { WindowFrame } from './components/ui/WindowFrame'
 import { StatusEntry } from '../electron/shared/types'
 
 function MergeToolLayout() {
@@ -30,14 +31,18 @@ function MergeToolLayout() {
 
   if (!repoPath) {
     return (
-      <div className="flex h-screen items-center justify-center bg-neutral-900 text-neutral-50 text-sm">
+      <div className="flex h-screen items-center justify-center bg-neutral-0 dark:bg-neutral-950 text-neutral-900 dark:text-neutral-50 text-sm">
         Invalid repository path.
       </div>
     )
   }
 
   return (
-    <div className="flex h-screen flex-col bg-neutral-900 text-neutral-50 overflow-hidden">
+    <WindowFrame 
+      title={`Conflicts - ${repoPath.split(/[\\/]/).pop()}`}
+      onClose={() => window.close()}
+      padding={false}
+    >
       <MergeConflictTool
         isOpen={true}
         onClose={() => window.close()}
@@ -46,7 +51,7 @@ function MergeToolLayout() {
         resolveConflict={handleResolve}
         standalone={true}
       />
-    </div>
+    </WindowFrame>
   )
 }
 
