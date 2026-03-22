@@ -227,6 +227,8 @@ export interface SystemAPI {
   getWorkspaceState(): Promise<WorkspaceState | null>
   saveWorkspaceState(state: WorkspaceState): void
   getTheme(): Promise<'light' | 'dark'>
+  getSortOrder(): Promise<'topo' | 'date'>
+  setSortOrder(order: 'topo' | 'date'): void
   onThemeUpdate(callback: (theme: 'light' | 'dark') => void): void
   quit(): void
   reload(): void

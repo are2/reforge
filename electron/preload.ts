@@ -105,6 +105,8 @@ const systemApi: SystemAPI = {
   getWorkspaceState: () => ipcRenderer.invoke('system:getWorkspaceState'),
   saveWorkspaceState: (state) => ipcRenderer.send('system:saveWorkspaceState', state),
   getTheme: () => ipcRenderer.invoke('system:getTheme'),
+  getSortOrder: () => ipcRenderer.invoke('system:getSortOrder'),
+  setSortOrder: (order) => ipcRenderer.send('system:setSortOrder', order),
   onThemeUpdate: (callback) => {
     ipcRenderer.on('system:theme-updated', (_event, theme) => callback(theme))
   },

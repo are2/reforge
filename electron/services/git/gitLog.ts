@@ -105,11 +105,12 @@ function formatDate(isoDate: string): string {
 export async function getLog(
   repoPath: string,
   limit = 200,
+  sort: 'topo' | 'date' = 'topo'
 ): Promise<GitCommit[]> {
   const stdout = await runGitOrThrow(repoPath, [
     'log',
     '--all',
-    '--topo-order',
+    sort === 'date' ? '--date-order' : '--topo-order',
     `--max-count=${limit}`,
     `--pretty=format:${RECORD_SEP}${LOG_FORMAT}`,
     '--name-status',
@@ -157,5 +158,34 @@ export async function getLog(
     })
   }
 
-  return commits
+  // ── Filter out stash helper commits ──────────────────────────
+  // Stash HEAD commits are octopus merges. To render a clean graph
+  // like standard Git clients, we remove the index and untracked
+  // helper commits from the history and reduce the stash commit
+  // to a single parent (the commit the stash was placed on).
+
+  const hiddenHashes = new Set<string>()
+
+  for (const commit of commits) {
+    const isStash = commit.refs.some(
+      (r) => r.name === 'refs/stash' || r.name.startsWith('stash@')
+    )
+    if (isStash && commit.parents.length >= 2) {
+      // The 2nd and (optional) 3rd parents are stash helpers
+      hiddenHashes.add(commit.parents[1])
+      if (commit.parents[2]) {
+        hiddenHashes.add(commit.parents[2])
+      }
+      // Keep only the 1st parent
+      commit.parents = [commit.parents[0]]
+    }
+  }
+
+  // Also catch edge case where a regular commit might literally be the helper commit itself?
+  // They usually start with "index on " or "untracked files on " but filtering by hash is safer.
+  const filteredCommits = commits.filter(
+    (c) => !hiddenHashes.has(c.shortHash) && !hiddenHashes.has(c.hash)
+  )
+
+  return filteredCommits
 }

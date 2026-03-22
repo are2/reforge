@@ -56,6 +56,7 @@ interface WindowState {
 
 interface AppSettings {
   theme: 'light' | 'dark'
+  sortOrder?: 'topo' | 'date'
 }
 
 const getWindowStatePath = () => path.join(app.getPath('userData'), 'window-state.json')
@@ -164,6 +165,11 @@ function setTheme(theme: 'light' | 'dark') {
     if (lightItem) lightItem.checked = theme === 'light'
     if (darkItem) darkItem.checked = theme === 'dark'
   }
+}
+
+function setSortOrder(order: 'topo' | 'date') {
+  currentSettings.sortOrder = order
+  saveSettings(currentSettings)
 }
 
 function createWindow() {
@@ -407,6 +413,14 @@ app.whenReady().then(() => {
     return currentSettings.theme
   })
 
+  ipcMain.handle('system:getSortOrder', () => {
+    return currentSettings.sortOrder || 'topo'
+  })
+
+  ipcMain.on('system:setSortOrder', (_event, order: 'topo' | 'date') => {
+    setSortOrder(order)
+  })
+
   ipcMain.on('system:quit', () => {
     app.quit()
   })
@@ -467,7 +481,7 @@ app.whenReady().then(() => {
 
     const [refsResult, commits, localChanges, isPrSupported] = await Promise.all([
       getAllRefs(repoPath),
-      getLog(repoPath, 200),
+      getLog(repoPath, 200, currentSettings.sortOrder || 'topo'),
       getLocalChanges(repoPath),
       isPullRequestSupported(repoPath),
     ])
