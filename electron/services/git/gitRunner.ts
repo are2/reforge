@@ -7,27 +7,31 @@ export interface GitResult {
   exitCode: number
 }
 
+let currentGitExecutable = 'git'
+
+export function setGitExecutable(path: string) {
+  currentGitExecutable = path === 'system' ? 'git' : path
+}
+
+
 /**
  * Spawn `git` with the given arguments in the given repo directory.
  * Returns stdout/stderr/exitCode. Never throws on non-zero exit —
  * callers decide how to handle errors.
  */
 export async function runGit(
-  repoPath: string,
+  repoPath: string | undefined,
   args: string[],
   options?: { env?: Record<string, string> }
 ): Promise<GitResult> {
-  if (!repoPath || typeof repoPath !== 'string') {
-    throw new Error('runGit: repoPath must be a non-empty string')
-  }
 
   const MAX_RETRIES = 5
   const RETRY_DELAY_MS = 100
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     const result = await new Promise<GitResult>((resolve, reject) => {
-      const child = spawn('git', args, {
-        cwd: repoPath,
+      const child = spawn(currentGitExecutable, args, {
+        cwd: repoPath || undefined,
         stdio: ['ignore', 'pipe', 'pipe'],
         // Avoid locale-dependent output
         env: { ...process.env, GIT_TERMINAL_PROMPT: '0', LC_ALL: 'C', ...options?.env },
@@ -75,7 +79,7 @@ export async function runGit(
  * Run git and throw if the exit code is non-zero.
  */
 export async function runGitOrThrow(
-  repoPath: string,
+  repoPath: string | undefined,
   args: string[],
   options?: { env?: Record<string, string> }
 ): Promise<string> {

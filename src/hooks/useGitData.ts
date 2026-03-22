@@ -620,6 +620,42 @@ export function useGitData(repoPath: string | null) {
       setState((prev) => ({ ...prev, loading: false }))
     }
   }, [loadRepo, handleError])
+
+  /**
+   * Configure tracking reference (upstream) for a branch.
+   */
+  const setBranchUpstream = useCallback(async (branch: string, upstream: string) => {
+    const currentPath = repoPathRef.current
+    if (!currentPath) return
+
+    setState((prev) => ({ ...prev, loading: true }))
+    try {
+      await window.git.setBranchUpstream(currentPath, branch, upstream)
+      await loadRepo(currentPath)
+    } catch (err) {
+      handleError(err, 'Failed to set branch tracking', 'setBranchUpstream')
+    } finally {
+      setState((prev) => ({ ...prev, loading: false }))
+    }
+  }, [loadRepo, handleError])
+
+  /**
+   * Remove tracking reference (upstream) from a branch.
+   */
+  const unsetBranchUpstream = useCallback(async (branch: string) => {
+    const currentPath = repoPathRef.current
+    if (!currentPath) return
+
+    setState((prev) => ({ ...prev, loading: true }))
+    try {
+      await window.git.unsetBranchUpstream(currentPath, branch)
+      await loadRepo(currentPath)
+    } catch (err) {
+      handleError(err, 'Failed to remove branch tracking', 'unsetBranchUpstream')
+    } finally {
+      setState((prev) => ({ ...prev, loading: false }))
+    }
+  }, [loadRepo, handleError])
   
   /**
    * Push local changes to a new stash.
@@ -748,6 +784,8 @@ export function useGitData(repoPath: string | null) {
     createTag,
     deleteTag,
     deleteRemoteBranch,
+    setBranchUpstream,
+    unsetBranchUpstream,
     stashPush,
     stashPop,
     stashApply,

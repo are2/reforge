@@ -16,6 +16,17 @@ export interface GitPerson {
   initials: string
 }
 
+export interface GitConfig {
+  name: string
+  email: string
+}
+
+export interface GitVersionInfo {
+  path: string
+  version: string
+}
+
+
 export interface GitRef {
   name: string
   type: 'local' | 'remote' | 'tag' | 'head'
@@ -186,6 +197,8 @@ export interface GitAPI {
   createBranch(repoPath: string, branch: string): Promise<void>
   push(repoPath: string, branch: string, force: boolean): Promise<void>
   pull(repoPath: string, branch: string, rebase: boolean): Promise<void>
+  setBranchUpstream(repoPath: string, branch: string, upstream: string): Promise<void>
+  unsetBranchUpstream(repoPath: string, branch: string): Promise<void>
   merge(repoPath: string, branch: string): Promise<void>
   abortMerge(repoPath: string): Promise<void>
   continueMerge(repoPath: string): Promise<void>
@@ -211,6 +224,9 @@ export interface GitAPI {
   stashPop(repoPath: string, index?: number): Promise<void>
   stashApply(repoPath: string, index?: number): Promise<void>
   stashDrop(repoPath: string, index?: number): Promise<void>
+  getGlobalConfig(): Promise<GitConfig>
+  setGlobalConfig(name: string, email: string): Promise<void>
+  getDetectedGitVersions(): Promise<GitVersionInfo[]>
 }
 
 /** Application workspace state containing open tabs. */
@@ -238,4 +254,10 @@ export interface SystemAPI {
   zoomOut(): void
   zoomReset(): void
   toggleFullScreen(): void
+  setTheme(theme: 'light' | 'dark'): void
+  openSettings(): void
+  getCommitSortOrder(): Promise<'topo' | 'date'>
+  setCommitSortOrder(order: 'topo' | 'date'): void
+  getGitPath(): Promise<string>
+  setGitPath(path: string): void
 }

@@ -12,7 +12,7 @@ import { getFileDiff } from './services/git/gitDiff'
 import { discardFile, stageFile, unstageFile } from './services/git/gitStage'
 import { commit } from './services/git/gitCommit'
 import { cherryPick, abortCherryPick, continueCherryPick } from './services/git/gitCherryPick'
-import { createBranch, deleteBranch, deleteRemoteBranch } from './services/git/gitBranch'
+import { createBranch, deleteBranch, deleteRemoteBranch, setBranchUpstream, unsetBranchUpstream } from './services/git/gitBranch'
 import { gitPush } from './services/git/gitPush'
 import { gitPull } from './services/git/gitPull'
 import { mergeBranch, abortMerge, continueMerge } from './services/git/gitMerge'
@@ -22,6 +22,8 @@ import { openPullRequest, isPullRequestSupported } from './services/git/gitPullR
 import { getConflicts, getConflictDetails, resolveConflict } from './services/git/gitConflicts'
 import { createTag, deleteTag } from './services/git/gitTag'
 import { stashPush, stashPop, stashApply, stashDrop } from './services/git/gitStash'
+import { getGlobalConfig, setGlobalConfig, getDetectedGitVersions } from './services/git/gitSettings'
+import { setGitExecutable } from './services/git/gitRunner'
 import type { GitRepoData } from './shared/types'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -56,6 +58,8 @@ interface WindowState {
 
 interface AppSettings {
   theme: 'light' | 'dark'
+  gitPath?: string
+  commitSortOrder?: 'topo' | 'date'
 }
 
 const getWindowStatePath = () => path.join(app.getPath('userData'), 'window-state.json')
@@ -123,7 +127,9 @@ const getSettingsPath = () => path.join(app.getPath('userData'), 'settings.json'
 
 function loadSettings(): AppSettings {
   const defaultSettings: AppSettings = {
-    theme: 'dark'
+    theme: 'dark',
+    gitPath: 'system',
+    commitSortOrder: 'topo'
   }
 
   try {
@@ -146,14 +152,36 @@ function saveSettings(settings: AppSettings) {
 }
 
 const currentSettings = loadSettings()
+setGitExecutable(currentSettings.gitPath || 'system')
+
+function setGitPath(path: string) {
+  currentSettings.gitPath = path
+  saveSettings(currentSettings)
+  setGitExecutable(path || 'system')
+}
+
 
 function setTheme(theme: 'light' | 'dark') {
   currentSettings.theme = theme
   saveSettings(currentSettings)
   
-  // Notify all windows
+  const isDark = theme === 'dark'
+  const overlayOptions = {
+    color: isDark ? '#17181C' : '#F4F4F5',
+    symbolColor: isDark ? '#A1A1AA' : '#52525B',
+    height: 39
+  }
+
+  // Notify all windows and update their title bar overlay
   BrowserWindow.getAllWindows().forEach(window => {
     window.webContents.send('system:theme-updated', theme)
+    if (process.platform === 'win32') {
+      try {
+        window.setTitleBarOverlay(overlayOptions)
+      } catch (e) {
+        // Some windows might not have overlay enabled
+      }
+    }
   })
   
   // Update the menu to reflect the selection
@@ -177,9 +205,9 @@ function createWindow() {
     icon: path.join(process.env.VITE_PUBLIC, 'app_icon.png'),
     titleBarStyle: 'hidden',
     titleBarOverlay: {
-      color: currentSettings.theme === 'dark' ? '#17181C' : '#FFFFFF',
+      color: currentSettings.theme === 'dark' ? '#17181C' : '#F4F4F5',
       symbolColor: currentSettings.theme === 'dark' ? '#A1A1AA' : '#52525B',
-      height: 32
+      height: 39
     },
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
@@ -263,6 +291,12 @@ app.whenReady().then(() => {
     {
       label: 'File',
       submenu: [
+        {
+          label: 'Settings',
+          accelerator: 'CmdOrCtrl+,',
+          click: () => createSettingsWindow()
+        },
+        { type: 'separator' },
         isMac ? { role: 'close' } : { role: 'quit' }
       ]
     },
@@ -402,9 +436,26 @@ app.whenReady().then(() => {
     }
   })
 
-  // ── System: theme ────────────────────────────────────────────
+  // ── System: theme & gitPath ──────────────────────────────────
   ipcMain.handle('system:getTheme', () => {
     return currentSettings.theme
+  })
+
+  ipcMain.handle('system:getCommitSortOrder', () => {
+    return currentSettings.commitSortOrder || 'topo'
+  })
+
+  ipcMain.on('system:setCommitSortOrder', (_event, order: 'topo' | 'date') => {
+    currentSettings.commitSortOrder = order
+    saveSettings(currentSettings)
+  })
+
+  ipcMain.handle('system:getGitPath', () => {
+    return currentSettings.gitPath || 'system'
+  })
+
+  ipcMain.on('system:setGitPath', (_event, gitPath: string) => {
+    setGitPath(gitPath)
   })
 
   ipcMain.on('system:quit', () => {
@@ -441,6 +492,14 @@ app.whenReady().then(() => {
     win?.close()
   })
 
+  ipcMain.on('system:setTheme', (_event, theme: 'light' | 'dark') => {
+    setTheme(theme)
+  })
+
+  ipcMain.on('system:openSettings', () => {
+    createSettingsWindow()
+  })
+
   ipcMain.on('system:zoom-in', () => {
     const level = win?.webContents.getZoomLevel() ?? 0
     win?.webContents.setZoomLevel(level + 0.5)
@@ -465,9 +524,10 @@ app.whenReady().then(() => {
   ipcMain.handle('git:getRepoData', async (_event, repoPath: unknown) => {
     validatePath(repoPath)
 
+    const order = currentSettings.commitSortOrder || 'topo'
     const [refsResult, commits, localChanges, isPrSupported] = await Promise.all([
       getAllRefs(repoPath),
-      getLog(repoPath, 200),
+      getLog(repoPath, 200, order),
       getLocalChanges(repoPath),
       isPullRequestSupported(repoPath),
     ])
@@ -543,7 +603,8 @@ app.whenReady().then(() => {
   ipcMain.handle('git:getLog', async (_event, repoPath: unknown, limit?: unknown) => {
     validatePath(repoPath)
     const maxCount = typeof limit === 'number' && limit > 0 ? limit : 200
-    return await getLog(repoPath, maxCount)
+    const order = currentSettings.commitSortOrder || 'topo'
+    return await getLog(repoPath, maxCount, order)
   })
 
   // ── Git: checkout branch ─────────────────────────────────────
@@ -645,6 +706,26 @@ app.whenReady().then(() => {
       throw new Error('Invalid branch name')
     }
     await deleteRemoteBranch(repoPath, remote, branch)
+  })
+
+  // ── Git: branch tracking ────────────────────────────────────
+  ipcMain.handle('git:setBranchUpstream', async (_event, repoPath: unknown, branch: unknown, upstream: unknown) => {
+    validatePath(repoPath)
+    if (!branch || typeof branch !== 'string') {
+      throw new Error('Invalid branch name')
+    }
+    if (!upstream || typeof upstream !== 'string') {
+      throw new Error('Invalid upstream name')
+    }
+    await setBranchUpstream(repoPath, branch, upstream)
+  })
+
+  ipcMain.handle('git:unsetBranchUpstream', async (_event, repoPath: unknown, branch: unknown) => {
+    validatePath(repoPath)
+    if (!branch || typeof branch !== 'string') {
+      throw new Error('Invalid branch name')
+    }
+    await unsetBranchUpstream(repoPath, branch)
   })
 
   // ── Git: push ───────────────────────────────────────────────
@@ -771,6 +852,23 @@ app.whenReady().then(() => {
     return await getConflicts(repoPath)
   })
 
+  // ── Git: global config and settings ─────────────────────────
+  ipcMain.handle('git:getGlobalConfig', async () => {
+    return await getGlobalConfig()
+  })
+
+  ipcMain.handle('git:setGlobalConfig', async (_event, name: unknown, email: unknown) => {
+    if (typeof name !== 'string' || typeof email !== 'string') {
+      throw new Error('Invalid name or email')
+    }
+    await setGlobalConfig(name, email)
+  })
+
+  ipcMain.handle('git:getDetectedGitVersions', async () => {
+    return await getDetectedGitVersions()
+  })
+
+
   ipcMain.handle('git:getConflictDetails', async (_event, repoPath: unknown, filePath: unknown) => {
     validatePath(repoPath)
     if (!filePath || typeof filePath !== 'string') {
@@ -810,6 +908,12 @@ app.whenReady().then(() => {
       webPreferences: {
         preload: path.join(__dirname, 'preload.mjs'),
       },
+      titleBarStyle: 'hidden',
+      titleBarOverlay: {
+        color: currentSettings.theme === 'dark' ? '#17181C' : '#F4F4F5',
+        symbolColor: currentSettings.theme === 'dark' ? '#A1A1AA' : '#52525B',
+        height: 39
+      },
       // Remove menu for the merge tool
       autoHideMenuBar: true
     })
@@ -826,6 +930,46 @@ app.whenReady().then(() => {
 
     return true
   })
+
+  function createSettingsWindow() {
+    const width = 800
+    const height = 600
+    const mainBounds = win?.getBounds()
+    
+    let x: number | undefined
+    let y: number | undefined
+    
+    if (mainBounds) {
+      x = Math.floor(mainBounds.x + (mainBounds.width - width) / 2)
+      y = Math.floor(mainBounds.y + (mainBounds.height - height) / 2)
+    }
+
+    const settingsWin = new BrowserWindow({
+      width,
+      height,
+      x,
+      y,
+      title: 'Settings',
+      icon: path.join(process.env.VITE_PUBLIC, 'app_icon.png'),
+      resizable: true,
+      autoHideMenuBar: true,
+      webPreferences: {
+        preload: path.join(__dirname, 'preload.mjs'),
+      },
+      titleBarStyle: 'hidden',
+      titleBarOverlay: {
+        color: currentSettings.theme === 'dark' ? '#17181C' : '#F4F4F5',
+        symbolColor: currentSettings.theme === 'dark' ? '#A1A1AA' : '#52525B',
+        height: 39
+      },
+    })
+
+    const url = VITE_DEV_SERVER_URL 
+      ? `${VITE_DEV_SERVER_URL}?settings=true`
+      : `file://${path.join(RENDERER_DIST, 'index.html')}?settings=true`
+
+    settingsWin.loadURL(url)
+  }
 
   createWindow()
 })

@@ -244,13 +244,13 @@ export function MergeConflictTool({
             <div className="editor-controls">
               <div className="control-group">
                 <button 
-                  className="px-3 py-1 text-xs font-semibold rounded bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 transition-colors"
+                  className="px-3 py-1 text-xs font-semibold rounded bg-white dark:bg-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-700 border border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-neutral-100 transition-colors"
                   onClick={useAllTheirs}
                 >
                   Accept All Theirs
                 </button>
                 <button 
-                  className="px-3 py-1 text-xs font-semibold rounded bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 transition-colors"
+                  className="px-3 py-1 text-xs font-semibold rounded bg-white dark:bg-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-700 border border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-neutral-100 transition-colors"
                   onClick={useAllOurs}
                 >
                   Accept All Ours
@@ -305,35 +305,52 @@ export function MergeConflictTool({
       <style>{`
         .conflict-tool-layout {
           display: flex;
-          background: #0F1115;
-          color: #F4F4F5;
+          background: #FFFFFF;
+          color: #09090B;
           font-family: var(--font-ui);
         }
-        .conflict-tool-layout.standalone {
-          height: 100vh;
-          width: 100vw;
+        .dark .conflict-tool-layout {
+          background: #0F1115;
+          color: #F4F4F5;
         }
+
+        .conflict-tool-layout.standalone {
+          height: 100%;
+          width: 100%;
+        }
+
         .conflict-sidebar {
           width: 250px;
           min-width: 200px;
-          border-right: 1px solid #2A2A30;
-          background: #17181C;
+          border-right: 1px solid #E4E4E7;
+          background: #F4F4F5;
           display: flex;
           flex-direction: column;
         }
+        .dark .conflict-sidebar {
+          border-right-color: #2A2A30;
+          background: #17181C;
+        }
+
         .conflict-sidebar h4 {
           padding: 12px 16px;
           margin: 0;
           font-size: 0.65rem;
-          color: #A1A1AA;
+          color: #71717A;
           text-transform: uppercase;
           letter-spacing: 0.05em;
-          border-bottom: 1px solid #2A2A30;
+          border-bottom: 1px solid #E4E4E7;
         }
+        .dark .conflict-sidebar h4 {
+          color: #A1A1AA;
+          border-bottom-color: #2A2A30;
+        }
+
         .file-list {
           flex: 1;
           overflow-y: auto;
         }
+
         .file-item {
           padding: 8px 16px;
           display: flex;
@@ -341,13 +358,26 @@ export function MergeConflictTool({
           gap: 10px;
           cursor: pointer;
           font-size: 0.8rem;
-          color: #D4D4D8;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+          color: #3F3F46;
+          border-bottom: 1px solid rgba(0, 0, 0, 0.05);
         }
+        .dark .file-item {
+          color: #D4D4D8;
+          border-bottom-color: rgba(255, 255, 255, 0.03);
+        }
+
         .file-item:hover {
+          background: rgba(0, 0, 0, 0.03);
+        }
+        .dark .file-item:hover {
           background: rgba(255, 255, 255, 0.05);
         }
+
         .file-item.selected {
+          background: rgba(168, 85, 247, 0.1);
+          color: #9333EA;
+        }
+        .dark .file-item.selected {
           background: rgba(233, 168, 245, 0.1);
           color: #E9A8F5;
         }
@@ -356,9 +386,13 @@ export function MergeConflictTool({
           flex: 1;
           display: flex;
           flex-direction: column;
-          background: #0F1115;
+          background: #FFFFFF;
           min-width: 0;
         }
+        .dark .conflict-editor-area {
+          background: #0F1115;
+        }
+
         .tool-loading, .no-file-selected {
           display: flex;
           flex-direction: column;
@@ -373,30 +407,44 @@ export function MergeConflictTool({
           flex-direction: column;
           height: 100%;
         }
+
         .editor-controls {
           padding: 10px 16px;
-          border-bottom: 1px solid #2A2A30;
+          border-bottom: 1px solid #E4E4E7;
           display: flex;
           align-items: center;
-          background: #17181C;
+          background: #F4F4F5;
           z-index: 10;
         }
+        .dark .editor-controls {
+          border-bottom-color: #2A2A30;
+          background: #17181C;
+        }
+
         .control-group {
           display: flex;
           gap: 8px;
         }
+
         .filename-label {
           font-size: 0.75rem;
-          color: #71717A;
+          color: #52525B;
           font-family: var(--font-mono);
+        }
+        .dark .filename-label {
+          color: #71717A;
         }
         
         .blocks-viewer-container {
           flex: 2;
           overflow: hidden;
-          background: #0F1115;
-          border-bottom: 1px solid #2A2A30;
+          background: #FAFAFA;
+          border-bottom: 1px solid #E4E4E7;
           display: flex;
+        }
+        .dark .blocks-viewer-container {
+          background: #0F1115;
+          border-bottom-color: #2A2A30;
         }
         
         .side-pane {
@@ -407,44 +455,60 @@ export function MergeConflictTool({
           container-type: inline-size;
         }
 
-        /* Hide scrollbars but keep functionality if needed, or just style them */
         .side-pane::-webkit-scrollbar {
           width: 8px;
           height: 8px;
         }
         .side-pane::-webkit-scrollbar-track {
-          background: #0F1115;
+          background: transparent;
         }
         .side-pane::-webkit-scrollbar-thumb {
-          background: #2A2A30;
+          background: #D4D4D8;
           border-radius: 4px;
         }
+        .dark .side-pane::-webkit-scrollbar-thumb {
+          background: #2A2A30;
+        }
         .side-pane::-webkit-scrollbar-thumb:hover {
+          background: #A1A1AA;
+        }
+        .dark .side-pane::-webkit-scrollbar-thumb:hover {
           background: #3F3F46;
         }
 
         .vertical-spacer {
           width: 2px;
-          background: #2A2A30;
+          background: #E4E4E7;
           height: 100%;
-          box-shadow: 0 0 10px rgba(0,0,0,0.5);
+          box-shadow: 0 0 10px rgba(0,0,0,0.1);
           position: relative;
           z-index: 15;
+        }
+        .dark .vertical-spacer {
+          background: #2A2A30;
+          box-shadow: 0 0 10px rgba(0,0,0,0.5);
         }
         
         .block-item {
           padding: 0;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+          border-bottom: 1px solid rgba(0, 0, 0, 0.05);
           min-width: fit-content;
         }
+        .dark .block-item {
+          border-bottom-color: rgba(255, 255, 255, 0.03);
+        }
+
         .stable-text {
           margin: 0;
           padding: 8px 16px;
           font-family: var(--font-mono);
           font-size: 0.75rem;
-          color: #71717A;
+          color: #52525B;
           white-space: pre;
           line-height: 1.5;
+        }
+        .dark .stable-text {
+          color: #71717A;
         }
         
         .conflict-side {
@@ -454,24 +518,29 @@ export function MergeConflictTool({
           opacity: 0.8;
           min-height: 100px;
         }
-        .conflict-side.ours { background: rgba(168, 85, 247, 0.05); } /* violet */
-        .conflict-side.theirs { background: rgba(20, 184, 166, 0.05); } /* teal */
+        .conflict-side.ours { background: rgba(168, 85, 247, 0.05); } 
+        .conflict-side.theirs { background: rgba(20, 184, 166, 0.05); } 
         
         .conflict-side.active {
           opacity: 1;
+          box-shadow: inset 0 0 20px rgba(0,0,0,0.05);
+        }
+        .dark .conflict-side.active {
           box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
         }
         
-        .ours.active { background: rgba(168, 85, 247, 0.15); border-left: 2px solid #a855f7; }
-        .theirs.active { background: rgba(20, 184, 166, 0.15); border-left: 2px solid #14b8a6; }
+        .ours.active { background: rgba(168, 85, 247, 0.1); border-left: 2px solid #9333ea; }
+        .theirs.active { background: rgba(20, 184, 166, 0.1); border-left: 2px solid #0d9488; }
+        .dark .ours.active { background: rgba(168, 85, 247, 0.15); border-left-color: #a855f7; }
+        .dark .theirs.active { background: rgba(20, 184, 166, 0.15); border-left-color: #14b8a6; }
         
         .side-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
           padding: 8px 12px;
-          background: #1c1d22;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+          background: #F4F4F5;
+          border-bottom: 1px solid rgba(0, 0, 0, 0.05);
           position: sticky;
           top: 0;
           left: 0;
@@ -479,11 +548,19 @@ export function MergeConflictTool({
           z-index: 10;
           box-sizing: border-box;
         }
+        .dark .side-header {
+          background: #1c1d22;
+          border-bottom-color: rgba(255, 255, 255, 0.1);
+        }
+
         .side-header .label {
           font-size: 0.65rem;
           font-weight: 700;
           text-transform: uppercase;
           letter-spacing: 0.05em;
+          color: #71717A;
+        }
+        .dark .side-header .label {
           color: #a1a1aa;
         }
         
@@ -492,15 +569,30 @@ export function MergeConflictTool({
           font-size: 0.65rem;
           font-weight: 600;
           border-radius: 4px;
-          background: #27272a;
-          color: #f4f4f5;
-          border: 1px solid #3f3f46;
+          background: #FFFFFF;
+          color: #18181B;
+          border: 1px solid #E4E4E7;
           transition: all 0.2s;
         }
+        .dark .select-btn {
+          background: #27272a;
+          color: #f4f4f5;
+          border-color: #3f3f46;
+        }
+
         .select-btn:hover {
+          background: #F4F4F5;
+        }
+        .dark .select-btn:hover {
           background: #3f3f46;
         }
+
         .active .select-btn {
+          background: #18181B;
+          color: #FFFFFF;
+          border-color: #18181B;
+        }
+        .dark .active .select-btn {
           background: #f4f4f5;
           color: #09090b;
           border-color: #f4f4f5;
@@ -519,9 +611,13 @@ export function MergeConflictTool({
           flex: 1;
           display: flex;
           flex-direction: column;
-          background: #0F1115;
+          background: #FFFFFF;
           min-height: 200px;
         }
+        .dark .resolution-editor {
+          background: #0F1115;
+        }
+
         .resolution-editor textarea {
           flex: 1;
           width: 100%;
@@ -530,22 +626,33 @@ export function MergeConflictTool({
           font-family: var(--font-mono);
           font-size: 0.85rem;
           background: transparent;
-          color: #FAFAFA;
+          color: #09090B;
           resize: none;
           line-height: 1.6;
         }
+        .dark .resolution-editor textarea {
+          color: #FAFAFA;
+        }
+
         .resolution-editor textarea:focus {
           outline: none;
         }
+
         .pane-header {
           padding: 6px 12px;
-          background: #222228;
+          background: #F4F4F5;
           font-size: 0.65rem;
           font-weight: 600;
-          color: #A1A1AA;
+          color: #71717A;
           text-transform: uppercase;
-          border-bottom: 1px solid #2A2A30;
-          border-top: 1px solid #2A2A30;
+          border-bottom: 1px solid #E4E4E7;
+          border-top: 1px solid #E4E4E7;
+        }
+        .dark .pane-header {
+          background: #222228;
+          color: #A1A1AA;
+          border-bottom-color: #2A2A30;
+          border-top-color: #2A2A30;
         }
       `}</style>
     </div>

@@ -40,6 +40,7 @@ const paths: Record<string, string> = {
   'arrow-down': 'M19 9l-7 7-7 7',
   file: 'M7 21h10a2 2 0 002-2V9.414a2 2 0 00-.586-1.414l-4.414-4.414A2 2 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z',
   logo: 'M4 19h16v1H4v-1z M7 19v-4c0-2 1-3 3-3h4c2 0 3 1 3 3v4 M3 11c0-2 2-3 4-3h10c2 0 4 1 4 3v2H3v-2z M12 8V4a2 2 0 110-4 2 2 0 010 4z',
+  check: 'M5 13l4 4L19 7',
 }
 
 export function Icon({ name, className = '', size = 14, color }: IconProps) {

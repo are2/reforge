@@ -80,6 +80,8 @@ interface LeftSidebarProps {
   onStashApply: (index: number) => Promise<void>
   onStashPop: (index: number) => Promise<void>
   onStashDrop: (index: number) => Promise<void>
+  onTrackingSet: (branch: string, upstream: string) => Promise<void>
+  onTrackingUnset: (branch: string) => Promise<void>
 }
 
 // ── Branch tree item ───────────────────────────────────────────
@@ -96,12 +98,16 @@ function BranchItem({
   onDelete,
   onPull,
   onPush,
+  remotes,
+  onTrackingSet,
+  onTrackingUnset,
 }: {
   branch: GitBranch
   depth?: number
   /** Fully qualified branch name (e.g. "feature/api"). */
   fullName: string
   activeBranch: string
+  remotes: GitRemote[]
   onBranchSelect: (tip: string) => void
   onActiveBranchChange: (name: string) => void
   onMerge: (name: string) => void
@@ -109,6 +115,8 @@ function BranchItem({
   onDelete: (name: string) => void
   onPull: (branch: string, rebase: boolean) => Promise<void>
   onPush: (branch: string, force: boolean) => Promise<void>
+  onTrackingSet: (branch: string, upstream: string) => Promise<void>
+  onTrackingUnset: (branch: string) => Promise<void>
 }) {
   const [open, setOpen] = useState(true)
   const hasChildren = branch.children && branch.children.length > 0
@@ -116,6 +124,7 @@ function BranchItem({
 
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showTrackingSubmenu, setShowTrackingSubmenu] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -123,6 +132,7 @@ function BranchItem({
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setContextMenu(null)
         setShowDeleteConfirm(false)
+        setShowTrackingSubmenu(false)
       }
     }
     if (contextMenu) {
@@ -153,6 +163,7 @@ function BranchItem({
     e.stopPropagation()
     setContextMenu({ x: e.clientX, y: e.clientY })
     setShowDeleteConfirm(false)
+    setShowTrackingSubmenu(false)
   }
 
   function handleCheckout() {
@@ -188,6 +199,18 @@ function BranchItem({
     onDelete(fullName)
     setContextMenu(null)
     setShowDeleteConfirm(false)
+  }
+
+  function handleTrackingSet(upstream: string) {
+    onTrackingSet(fullName, upstream)
+    setContextMenu(null)
+    setShowTrackingSubmenu(false)
+  }
+
+  function handleTrackingUnset() {
+    onTrackingUnset(fullName)
+    setContextMenu(null)
+    setShowTrackingSubmenu(false)
   }
 
   return (
@@ -235,6 +258,7 @@ function BranchItem({
             depth={depth + 1}
             fullName={childFullName}
             activeBranch={activeBranch}
+            remotes={remotes}
             onBranchSelect={onBranchSelect}
             onActiveBranchChange={onActiveBranchChange}
             onMerge={onMerge}
@@ -242,6 +266,8 @@ function BranchItem({
             onDelete={onDelete}
             onPull={onPull}
             onPush={onPush}
+            onTrackingSet={onTrackingSet}
+            onTrackingUnset={onTrackingUnset}
           />
         )
       })}
@@ -315,6 +341,54 @@ function BranchItem({
               >
                 Rebase '{activeBranch}' on '{branch.name}'
               </button>
+              <div className="my-1 h-px bg-neutral-200 dark:bg-neutral-600" />
+              <div
+                className="relative group w-full"
+                onMouseEnter={() => setShowTrackingSubmenu(true)}
+                onMouseLeave={() => setShowTrackingSubmenu(false)}
+              >
+                <button
+                  className="flex w-full items-center px-3 py-1.5 text-xs text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700 dark:hover:text-neutral-50 justify-between"
+                >
+                  <span>Tracking</span>
+                  <Icon name="chevron" size={10} className="opacity-50" />
+                </button>
+                {showTrackingSubmenu && (
+                  <div className="absolute left-full top-[-4px] min-w-[160px] py-1 shadow-md rounded-md border border-neutral-200 bg-neutral-0 dark:border-neutral-700 dark:bg-neutral-800" style={{ marginLeft: '-4px' }}>
+                    <button
+                      disabled={!branch.upstream}
+                      onClick={handleTrackingUnset}
+                      className="flex w-full items-center px-3 py-1.5 text-xs text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700 dark:hover:text-neutral-50 disabled:opacity-50"
+                    >
+                      Remove tracking reference
+                    </button>
+                    <div className="my-1 h-px bg-neutral-200 dark:bg-neutral-600" />
+                    {remotes.length === 0 && (
+                      <div className="px-3 py-1.5 text-xs text-neutral-400 italic">No remotes</div>
+                    )}
+                    <div className="max-h-[200px] overflow-y-auto">
+                    {remotes.map(remote => (
+                      remote.branches.map(b => {
+                        const remoteBranchName = `${remote.name}/${b}`
+                        const isTracked = branch.upstream === remoteBranchName
+                        return (
+                          <button
+                            key={remoteBranchName}
+                            onClick={() => handleTrackingSet(remoteBranchName)}
+                            className="flex w-full items-center gap-1.5 px-3 py-1.5 text-xs text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700 dark:hover:text-neutral-50"
+                          >
+                            <span className="w-3 shrink-0 flex items-center justify-center">
+                              {isTracked && <Icon name="check" size={10} className="text-primary-500" />}
+                            </span>
+                            <span className="truncate">{remoteBranchName}</span>
+                          </button>
+                        )
+                      })
+                    ))}
+                    </div>
+                  </div>
+                )}
+              </div>
               <div className="my-1 h-px bg-neutral-200 dark:bg-neutral-600" />
               <button
                 onClick={handleDelete}
@@ -709,6 +783,8 @@ export function LeftSidebar({
   onStashApply,
   onStashPop,
   onStashDrop,
+  onTrackingSet,
+  onTrackingUnset,
 }: LeftSidebarProps) {
   return (
     <aside className="flex h-full w-full flex-col overflow-hidden border-r border-neutral-200 bg-neutral-25 dark:border-neutral-600 dark:bg-neutral-900">
@@ -757,6 +833,7 @@ export function LeftSidebar({
                 branch={branch}
                 fullName={branch.name}
                 activeBranch={activeBranch}
+                remotes={remotes}
                 onBranchSelect={onBranchSelect}
                 onActiveBranchChange={onActiveBranchChange}
                 onMerge={onMerge}
@@ -764,6 +841,8 @@ export function LeftSidebar({
                 onDelete={onDelete}
                 onPull={onPull}
                 onPush={onPush}
+                onTrackingSet={onTrackingSet}
+                onTrackingUnset={onTrackingUnset}
               />
             ))
           ) : (

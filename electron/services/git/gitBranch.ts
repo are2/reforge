@@ -32,3 +32,24 @@ export async function deleteRemoteBranch(
 ): Promise<void> {
   await runGitOrThrow(repoPath, ['push', remote, '--delete', branch])
 }
+
+/**
+ * Configure tracking reference (upstream) for a branch.
+ */
+export async function setBranchUpstream(
+  repoPath: string,
+  branch: string,
+  upstream: string,
+): Promise<void> {
+  await runGitOrThrow(repoPath, ['branch', '--set-upstream-to', upstream, branch])
+}
+
+/**
+ * Remove tracking reference (upstream) from a branch.
+ */
+export async function unsetBranchUpstream(
+  repoPath: string,
+  branch: string,
+): Promise<void> {
+  await runGitOrThrow(repoPath, ['branch', '--unset-upstream', branch])
+}
