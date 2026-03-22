@@ -21,8 +21,8 @@ export function WindowFrame({ title, children, footer, onClose, padding = true }
         <h3 className="text-[11px] font-bold uppercase tracking-[0.05em] text-neutral-500 dark:text-neutral-400 no-drag">
           {title}
         </h3>
-        
-        <button 
+
+        <button
           onClick={onClose}
           className="no-drag flex h-6 w-6 items-center justify-center rounded transition-colors hover:bg-neutral-200 dark:hover:bg-neutral-800"
           title="Close"

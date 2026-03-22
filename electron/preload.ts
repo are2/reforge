@@ -98,6 +98,12 @@ const gitApi: GitAPI = {
     ipcRenderer.invoke('git:stashApply', repoPath, index),
   stashDrop: (repoPath: string, index?: number) =>
     ipcRenderer.invoke('git:stashDrop', repoPath, index),
+  getGlobalConfig: () =>
+    ipcRenderer.invoke('git:getGlobalConfig'),
+  setGlobalConfig: (name: string, email: string) =>
+    ipcRenderer.invoke('git:setGlobalConfig', name, email),
+  getDetectedGitVersions: () =>
+    ipcRenderer.invoke('git:getDetectedGitVersions'),
 }
 
 const systemApi: SystemAPI = {
@@ -120,6 +126,8 @@ const systemApi: SystemAPI = {
   toggleFullScreen: () => ipcRenderer.send('system:toggle-fullscreen'),
   setTheme: (theme) => ipcRenderer.send('system:setTheme', theme),
   openSettings: () => ipcRenderer.send('system:openSettings'),
+  getGitPath: () => ipcRenderer.invoke('system:getGitPath'),
+  setGitPath: (path) => ipcRenderer.send('system:setGitPath', path),
 }
 
 contextBridge.exposeInMainWorld('git', gitApi)

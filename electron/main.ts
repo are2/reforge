@@ -22,6 +22,8 @@ import { openPullRequest, isPullRequestSupported } from './services/git/gitPullR
 import { getConflicts, getConflictDetails, resolveConflict } from './services/git/gitConflicts'
 import { createTag, deleteTag } from './services/git/gitTag'
 import { stashPush, stashPop, stashApply, stashDrop } from './services/git/gitStash'
+import { getGlobalConfig, setGlobalConfig, getDetectedGitVersions } from './services/git/gitSettings'
+import { setGitExecutable } from './services/git/gitRunner'
 import type { GitRepoData } from './shared/types'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -56,6 +58,7 @@ interface WindowState {
 
 interface AppSettings {
   theme: 'light' | 'dark'
+  gitPath?: string
 }
 
 const getWindowStatePath = () => path.join(app.getPath('userData'), 'window-state.json')
@@ -123,7 +126,8 @@ const getSettingsPath = () => path.join(app.getPath('userData'), 'settings.json'
 
 function loadSettings(): AppSettings {
   const defaultSettings: AppSettings = {
-    theme: 'dark'
+    theme: 'dark',
+    gitPath: 'system'
   }
 
   try {
@@ -146,6 +150,14 @@ function saveSettings(settings: AppSettings) {
 }
 
 const currentSettings = loadSettings()
+setGitExecutable(currentSettings.gitPath || 'system')
+
+function setGitPath(path: string) {
+  currentSettings.gitPath = path
+  saveSettings(currentSettings)
+  setGitExecutable(path || 'system')
+}
+
 
 function setTheme(theme: 'light' | 'dark') {
   currentSettings.theme = theme
@@ -422,9 +434,17 @@ app.whenReady().then(() => {
     }
   })
 
-  // ── System: theme ────────────────────────────────────────────
+  // ── System: theme & gitPath ──────────────────────────────────
   ipcMain.handle('system:getTheme', () => {
     return currentSettings.theme
+  })
+
+  ipcMain.handle('system:getGitPath', () => {
+    return currentSettings.gitPath || 'system'
+  })
+
+  ipcMain.on('system:setGitPath', (_event, gitPath: string) => {
+    setGitPath(gitPath)
   })
 
   ipcMain.on('system:quit', () => {
@@ -799,6 +819,23 @@ app.whenReady().then(() => {
     return await getConflicts(repoPath)
   })
 
+  // ── Git: global config and settings ─────────────────────────
+  ipcMain.handle('git:getGlobalConfig', async () => {
+    return await getGlobalConfig()
+  })
+
+  ipcMain.handle('git:setGlobalConfig', async (_event, name: unknown, email: unknown) => {
+    if (typeof name !== 'string' || typeof email !== 'string') {
+      throw new Error('Invalid name or email')
+    }
+    await setGlobalConfig(name, email)
+  })
+
+  ipcMain.handle('git:getDetectedGitVersions', async () => {
+    return await getDetectedGitVersions()
+  })
+
+
   ipcMain.handle('git:getConflictDetails', async (_event, repoPath: unknown, filePath: unknown) => {
     validatePath(repoPath)
     if (!filePath || typeof filePath !== 'string') {
@@ -862,8 +899,8 @@ app.whenReady().then(() => {
   })
 
   function createSettingsWindow() {
-    const width = 600
-    const height = 450
+    const width = 800
+    const height = 600
     const mainBounds = win?.getBounds()
     
     let x: number | undefined
@@ -881,9 +918,7 @@ app.whenReady().then(() => {
       y,
       title: 'Settings',
       icon: path.join(process.env.VITE_PUBLIC, 'app_icon.png'),
-      resizable: false,
-      minimizable: false,
-      maximizable: false,
+      resizable: true,
       autoHideMenuBar: true,
       webPreferences: {
         preload: path.join(__dirname, 'preload.mjs'),

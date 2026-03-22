@@ -31,7 +31,7 @@ function MergeToolLayout() {
 
   if (!repoPath) {
     return (
-      <div className="flex h-screen items-center justify-center bg-neutral-0 dark:bg-neutral-950 text-neutral-900 dark:text-neutral-50 text-sm">
+      <div className="flex h-screen items-center justify-center bg-white dark:bg-neutral-950 text-neutral-900 dark:text-neutral-50 text-sm">
         Invalid repository path.
       </div>
     )
