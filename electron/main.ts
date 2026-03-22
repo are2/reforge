@@ -12,7 +12,7 @@ import { getFileDiff } from './services/git/gitDiff'
 import { discardFile, stageFile, unstageFile } from './services/git/gitStage'
 import { commit } from './services/git/gitCommit'
 import { cherryPick, abortCherryPick, continueCherryPick } from './services/git/gitCherryPick'
-import { createBranch, deleteBranch, deleteRemoteBranch } from './services/git/gitBranch'
+import { createBranch, deleteBranch, deleteRemoteBranch, setBranchUpstream, unsetBranchUpstream } from './services/git/gitBranch'
 import { gitPush } from './services/git/gitPush'
 import { gitPull } from './services/git/gitPull'
 import { mergeBranch, abortMerge, continueMerge } from './services/git/gitMerge'
@@ -706,6 +706,26 @@ app.whenReady().then(() => {
       throw new Error('Invalid branch name')
     }
     await deleteRemoteBranch(repoPath, remote, branch)
+  })
+
+  // ── Git: branch tracking ────────────────────────────────────
+  ipcMain.handle('git:setBranchUpstream', async (_event, repoPath: unknown, branch: unknown, upstream: unknown) => {
+    validatePath(repoPath)
+    if (!branch || typeof branch !== 'string') {
+      throw new Error('Invalid branch name')
+    }
+    if (!upstream || typeof upstream !== 'string') {
+      throw new Error('Invalid upstream name')
+    }
+    await setBranchUpstream(repoPath, branch, upstream)
+  })
+
+  ipcMain.handle('git:unsetBranchUpstream', async (_event, repoPath: unknown, branch: unknown) => {
+    validatePath(repoPath)
+    if (!branch || typeof branch !== 'string') {
+      throw new Error('Invalid branch name')
+    }
+    await unsetBranchUpstream(repoPath, branch)
   })
 
   // ── Git: push ───────────────────────────────────────────────

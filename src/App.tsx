@@ -267,6 +267,8 @@ function AppLayout() {
             onStashApply={gitData.stashApply}
             onStashPop={gitData.stashPop}
             onStashDrop={gitData.stashDrop}
+            onTrackingSet={gitData.setBranchUpstream}
+            onTrackingUnset={gitData.unsetBranchUpstream}
           />
         </div>
 

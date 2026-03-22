@@ -43,6 +43,10 @@ const gitApi: GitAPI = {
     ipcRenderer.invoke('git:push', repoPath, branch, force),
   pull: (repoPath: string, branch: string, rebase: boolean) =>
     ipcRenderer.invoke('git:pull', repoPath, branch, rebase),
+  setBranchUpstream: (repoPath: string, branch: string, upstream: string) =>
+    ipcRenderer.invoke('git:setBranchUpstream', repoPath, branch, upstream),
+  unsetBranchUpstream: (repoPath: string, branch: string) =>
+    ipcRenderer.invoke('git:unsetBranchUpstream', repoPath, branch),
   merge: (repoPath: string, branch: string) =>
     ipcRenderer.invoke('git:merge', repoPath, branch),
 

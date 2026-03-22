@@ -197,6 +197,8 @@ export interface GitAPI {
   createBranch(repoPath: string, branch: string): Promise<void>
   push(repoPath: string, branch: string, force: boolean): Promise<void>
   pull(repoPath: string, branch: string, rebase: boolean): Promise<void>
+  setBranchUpstream(repoPath: string, branch: string, upstream: string): Promise<void>
+  unsetBranchUpstream(repoPath: string, branch: string): Promise<void>
   merge(repoPath: string, branch: string): Promise<void>
   abortMerge(repoPath: string): Promise<void>
   continueMerge(repoPath: string): Promise<void>
