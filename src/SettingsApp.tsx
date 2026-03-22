@@ -51,12 +51,14 @@ function SettingsLayout() {
       onClose={() => window.close()}
       footer={footer}
     >
-      <div className="space-y-10 pb-6">
+      <div className="pb-6">
         <header>
           <p className="text-xs text-neutral-500 dark:text-neutral-400">
             Configure your experience in Reforge.
           </p>
         </header>
+
+        <hr className="my-8 border-neutral-200 dark:border-neutral-800" />
 
         <section className="space-y-4">
           <h2 className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Appearance</h2>
@@ -122,6 +124,8 @@ function SettingsLayout() {
           </div>
         </section>
 
+        <hr className="my-8 border-neutral-200 dark:border-neutral-800" />
+
         <section className="space-y-4">
           <h2 className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">History</h2>
           
@@ -161,6 +165,8 @@ function SettingsLayout() {
             </div>
           </div>
         </section>
+
+        <hr className="my-8 border-neutral-200 dark:border-neutral-800" />
 
         <section className="space-y-4">
           <h2 className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Git</h2>

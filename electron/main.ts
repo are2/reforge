@@ -167,9 +167,9 @@ function setTheme(theme: 'light' | 'dark') {
   
   const isDark = theme === 'dark'
   const overlayOptions = {
-    color: isDark ? '#17181C' : '#FFFFFF',
+    color: isDark ? '#17181C' : '#F4F4F5',
     symbolColor: isDark ? '#A1A1AA' : '#52525B',
-    height: 32
+    height: 39
   }
 
   // Notify all windows and update their title bar overlay
@@ -205,9 +205,9 @@ function createWindow() {
     icon: path.join(process.env.VITE_PUBLIC, 'app_icon.png'),
     titleBarStyle: 'hidden',
     titleBarOverlay: {
-      color: currentSettings.theme === 'dark' ? '#17181C' : '#FFFFFF',
+      color: currentSettings.theme === 'dark' ? '#17181C' : '#F4F4F5',
       symbolColor: currentSettings.theme === 'dark' ? '#A1A1AA' : '#52525B',
-      height: 32
+      height: 39
     },
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
@@ -890,9 +890,9 @@ app.whenReady().then(() => {
       },
       titleBarStyle: 'hidden',
       titleBarOverlay: {
-        color: currentSettings.theme === 'dark' ? '#17181C' : '#FFFFFF',
+        color: currentSettings.theme === 'dark' ? '#17181C' : '#F4F4F5',
         symbolColor: currentSettings.theme === 'dark' ? '#A1A1AA' : '#52525B',
-        height: 32
+        height: 39
       },
       // Remove menu for the merge tool
       autoHideMenuBar: true
@@ -938,9 +938,9 @@ app.whenReady().then(() => {
       },
       titleBarStyle: 'hidden',
       titleBarOverlay: {
-        color: currentSettings.theme === 'dark' ? '#17181C' : '#FFFFFF',
+        color: currentSettings.theme === 'dark' ? '#17181C' : '#F4F4F5',
         symbolColor: currentSettings.theme === 'dark' ? '#A1A1AA' : '#52525B',
-        height: 32
+        height: 39
       },
     })
 

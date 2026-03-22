@@ -37,7 +37,7 @@ function MenuDropdown({ label, items, isOpen, onToggle, onClose }: MenuDropdownP
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={onToggle}
-        className={`px-3 h-8 text-[11px] font-medium transition-colors hover:bg-neutral-200 dark:hover:bg-neutral-700 focus:outline-none ${
+        className={`px-3 h-[39px] text-xs font-medium transition-colors hover:bg-neutral-200 dark:hover:bg-neutral-700 focus:outline-none ${
           isOpen ? 'bg-neutral-200 dark:bg-neutral-700' : ''
         }`}
       >
@@ -56,7 +56,7 @@ function MenuDropdown({ label, items, isOpen, onToggle, onClose }: MenuDropdownP
                   item.action?.()
                   onClose()
                 }}
-                className="flex w-full items-center px-3 py-1.5 text-[11px] text-neutral-700 hover:bg-primary-500 hover:text-white dark:text-neutral-300 dark:hover:bg-primary-600 dark:hover:text-white transition-colors text-left"
+                className="flex w-full items-center px-3 py-1.5 text-xs text-neutral-700 hover:bg-primary-500 hover:text-white dark:text-neutral-300 dark:hover:bg-primary-600 dark:hover:text-white transition-colors text-left"
               >
                 {item.label}
               </button>
@@ -111,12 +111,12 @@ export function TitleBar() {
 
   return (
     <div 
-      className="flex h-8 shrink-0 select-none items-center border-b border-neutral-200 bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900"
+      className="flex h-10 shrink-0 select-none items-center border-b border-neutral-200 bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900"
       style={{ WebkitAppRegion: 'drag' } as any}
     >
       <div className="flex items-center px-2.5 gap-2 no-drag" style={{ WebkitAppRegion: 'no-drag' } as any}>
         <div className="text-primary-600">
-             <Icon name="logo" size={14} />
+             <Icon name="logo" size={16} />
         </div>
         <div className="flex items-center">
           {menuData.map((menu) => (
@@ -133,7 +133,7 @@ export function TitleBar() {
       </div>
 
       <div className="flex-1 flex justify-center items-center pointer-events-none">
-        <span className="text-[10px] font-medium text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
+        <span className="text-[11px] font-medium text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
             Reforge
         </span>
       </div>
