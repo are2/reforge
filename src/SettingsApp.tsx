@@ -11,9 +11,11 @@ function SettingsLayout() {
   const [gitEmail, setGitEmail] = useState('')
   const [selectedGitPath, setSelectedGitPath] = useState('system')
   const [isSavingGit, setIsSavingGit] = useState(false)
+  const [sortOrder, setSortOrder] = useState<'topo' | 'date'>('topo')
 
   useEffect(() => {
     window.system.getGitPath().then(setSelectedGitPath)
+    window.system.getCommitSortOrder().then(setSortOrder)
     window.git.getDetectedGitVersions().then(setGitVersions)
     window.git.getGlobalConfig().then(config => {
       setGitName(config.name || '')
@@ -116,6 +118,46 @@ function SettingsLayout() {
                 <div className="h-1.5 w-full bg-neutral-200 rounded-full" />
                 <div className="h-1.5 w-2/3 bg-neutral-200 rounded-full" />
               </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="space-y-4">
+          <h2 className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">History</h2>
+          
+          <div className="flex items-center gap-4">
+            <h3 className="text-sm text-neutral-700 dark:text-neutral-300">Sort commits:</h3>
+            <div className="flex items-center gap-4">
+              <label className="flex items-center gap-2 text-sm cursor-pointer text-neutral-700 dark:text-neutral-300">
+                <input 
+                  type="radio" 
+                  name="sortOrder" 
+                  value="topo" 
+                  checked={sortOrder === 'topo'} 
+                  onChange={(e) => {
+                    const val = e.target.value as 'topo' | 'date'
+                    setSortOrder(val)
+                    window.system.setCommitSortOrder(val)
+                  }}
+                  className="w-4 h-4 text-accent-violet bg-neutral-100 border-neutral-300 focus:ring-accent-violet dark:focus:ring-accent-violet dark:ring-offset-neutral-900 focus:ring-2 dark:bg-neutral-800 dark:border-neutral-600"
+                />
+                Topologically
+              </label>
+              <label className="flex items-center gap-2 text-sm cursor-pointer text-neutral-700 dark:text-neutral-300">
+                <input 
+                  type="radio" 
+                  name="sortOrder" 
+                  value="date" 
+                  checked={sortOrder === 'date'} 
+                  onChange={(e) => {
+                    const val = e.target.value as 'topo' | 'date'
+                    setSortOrder(val)
+                    window.system.setCommitSortOrder(val)
+                  }}
+                  className="w-4 h-4 text-accent-violet bg-neutral-100 border-neutral-300 focus:ring-accent-violet dark:focus:ring-accent-violet dark:ring-offset-neutral-900 focus:ring-2 dark:bg-neutral-800 dark:border-neutral-600"
+                />
+                By date
+              </label>
             </div>
           </div>
         </section>

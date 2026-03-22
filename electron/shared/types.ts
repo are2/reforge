@@ -254,6 +254,8 @@ export interface SystemAPI {
   toggleFullScreen(): void
   setTheme(theme: 'light' | 'dark'): void
   openSettings(): void
+  getCommitSortOrder(): Promise<'topo' | 'date'>
+  setCommitSortOrder(order: 'topo' | 'date'): void
   getGitPath(): Promise<string>
   setGitPath(path: string): void
 }

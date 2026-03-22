@@ -59,6 +59,7 @@ interface WindowState {
 interface AppSettings {
   theme: 'light' | 'dark'
   gitPath?: string
+  commitSortOrder?: 'topo' | 'date'
 }
 
 const getWindowStatePath = () => path.join(app.getPath('userData'), 'window-state.json')
@@ -127,7 +128,8 @@ const getSettingsPath = () => path.join(app.getPath('userData'), 'settings.json'
 function loadSettings(): AppSettings {
   const defaultSettings: AppSettings = {
     theme: 'dark',
-    gitPath: 'system'
+    gitPath: 'system',
+    commitSortOrder: 'topo'
   }
 
   try {
@@ -439,6 +441,15 @@ app.whenReady().then(() => {
     return currentSettings.theme
   })
 
+  ipcMain.handle('system:getCommitSortOrder', () => {
+    return currentSettings.commitSortOrder || 'topo'
+  })
+
+  ipcMain.on('system:setCommitSortOrder', (_event, order: 'topo' | 'date') => {
+    currentSettings.commitSortOrder = order
+    saveSettings(currentSettings)
+  })
+
   ipcMain.handle('system:getGitPath', () => {
     return currentSettings.gitPath || 'system'
   })
@@ -513,9 +524,10 @@ app.whenReady().then(() => {
   ipcMain.handle('git:getRepoData', async (_event, repoPath: unknown) => {
     validatePath(repoPath)
 
+    const order = currentSettings.commitSortOrder || 'topo'
     const [refsResult, commits, localChanges, isPrSupported] = await Promise.all([
       getAllRefs(repoPath),
-      getLog(repoPath, 200),
+      getLog(repoPath, 200, order),
       getLocalChanges(repoPath),
       isPullRequestSupported(repoPath),
     ])
@@ -591,7 +603,8 @@ app.whenReady().then(() => {
   ipcMain.handle('git:getLog', async (_event, repoPath: unknown, limit?: unknown) => {
     validatePath(repoPath)
     const maxCount = typeof limit === 'number' && limit > 0 ? limit : 200
-    return await getLog(repoPath, maxCount)
+    const order = currentSettings.commitSortOrder || 'topo'
+    return await getLog(repoPath, maxCount, order)
   })
 
   // ── Git: checkout branch ─────────────────────────────────────

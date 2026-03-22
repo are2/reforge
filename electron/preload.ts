@@ -126,6 +126,8 @@ const systemApi: SystemAPI = {
   toggleFullScreen: () => ipcRenderer.send('system:toggle-fullscreen'),
   setTheme: (theme) => ipcRenderer.send('system:setTheme', theme),
   openSettings: () => ipcRenderer.send('system:openSettings'),
+  getCommitSortOrder: () => ipcRenderer.invoke('system:getCommitSortOrder'),
+  setCommitSortOrder: (order) => ipcRenderer.send('system:setCommitSortOrder', order),
   getGitPath: () => ipcRenderer.invoke('system:getGitPath'),
   setGitPath: (path) => ipcRenderer.send('system:setGitPath', path),
 }
