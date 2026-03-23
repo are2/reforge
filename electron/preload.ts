@@ -137,6 +137,8 @@ const systemApi: SystemAPI = {
   setCommitSortOrder: (order) => ipcRenderer.send('system:setCommitSortOrder', order),
   getGitPath: () => ipcRenderer.invoke('system:getGitPath'),
   setGitPath: (path) => ipcRenderer.send('system:setGitPath', path),
+  getVerboseLogging: () => ipcRenderer.invoke('system:getVerboseLogging'),
+  setVerboseLogging: (enabled) => ipcRenderer.send('system:setVerboseLogging', enabled),
 }
 
 contextBridge.exposeInMainWorld('git', gitApi)

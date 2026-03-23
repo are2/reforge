@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process'
+import { logGitCommand } from './gitLogger'
 
 export interface GitResult {
   stdout: string
@@ -8,9 +9,14 @@ export interface GitResult {
 }
 
 let currentGitExecutable = 'git'
+let isVerboseLoggingEnabled = false
 
 export function setGitExecutable(path: string) {
   currentGitExecutable = path === 'system' ? 'git' : path
+}
+
+export function setVerboseLogging(enabled: boolean) {
+  isVerboseLoggingEnabled = enabled
 }
 
 
@@ -67,6 +73,19 @@ export async function runGit(
     if (result.exitCode !== 0 && result.stderr.includes('index.lock') && attempt < MAX_RETRIES) {
       await new Promise((r) => setTimeout(r, RETRY_DELAY_MS))
       continue
+    }
+
+    // Log the command execution if verbose logging is enabled
+    if (isVerboseLoggingEnabled) {
+      logGitCommand({
+        timestamp: new Date().toISOString(),
+        repoPath: repoPath,
+        command: currentGitExecutable,
+        args: args,
+        exitCode: result.exitCode,
+        stdout: result.stdout,
+        stderr: result.stderr,
+      })
     }
 
     return result

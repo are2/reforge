@@ -23,7 +23,8 @@ import { getConflicts, getConflictDetails, resolveConflict } from './services/gi
 import { createTag, deleteTag } from './services/git/gitTag'
 import { stashPush, stashPop, stashApply, stashDrop } from './services/git/gitStash'
 import { getGlobalConfig, setGlobalConfig, getDetectedGitVersions } from './services/git/gitSettings'
-import { setGitExecutable } from './services/git/gitRunner'
+import { setGitExecutable, setVerboseLogging } from './services/git/gitRunner'
+import { initGitLogger } from './services/git/gitLogger'
 import type { GitRepoData } from './shared/types'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -60,6 +61,7 @@ interface AppSettings {
   theme: 'light' | 'dark'
   gitPath?: string
   commitSortOrder?: 'topo' | 'date'
+  verboseLogging?: boolean
 }
 
 const getWindowStatePath = () => path.join(app.getPath('userData'), 'window-state.json')
@@ -129,7 +131,8 @@ function loadSettings(): AppSettings {
   const defaultSettings: AppSettings = {
     theme: 'dark',
     gitPath: 'system',
-    commitSortOrder: 'topo'
+    commitSortOrder: 'topo',
+    verboseLogging: false
   }
 
   try {
@@ -152,7 +155,9 @@ function saveSettings(settings: AppSettings) {
 }
 
 const currentSettings = loadSettings()
+initGitLogger(app.getPath('userData'))
 setGitExecutable(currentSettings.gitPath || 'system')
+setVerboseLogging(!!currentSettings.verboseLogging)
 
 function setGitPath(path: string) {
   currentSettings.gitPath = path
@@ -456,6 +461,16 @@ app.whenReady().then(() => {
 
   ipcMain.on('system:setGitPath', (_event, gitPath: string) => {
     setGitPath(gitPath)
+  })
+  
+  ipcMain.handle('system:getVerboseLogging', () => {
+    return !!currentSettings.verboseLogging
+  })
+
+  ipcMain.on('system:setVerboseLogging', (_event, enabled: boolean) => {
+    currentSettings.verboseLogging = enabled
+    saveSettings(currentSettings)
+    setVerboseLogging(enabled)
   })
 
   ipcMain.on('system:quit', () => {

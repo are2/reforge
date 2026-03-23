@@ -113,7 +113,7 @@ export async function getLog(
     '--all',
     orderFlag,
     `--max-count=${limit}`,
-    `--pretty=format:${RECORD_SEP}${LOG_FORMAT}`,
+    `--pretty=format:${RECORD_SEP}${LOG_FORMAT}${FIELD_SEP}`,
     '--name-status',
   ])
 
@@ -123,20 +123,15 @@ export async function getLog(
   const commits: GitCommit[] = []
 
   for (const record of records) {
-    // Split the record into the format-line and the name-status block.
-    // The format fields are on the first line(s), then a blank line, then --name-status output.
-    const firstNewline = record.indexOf('\n')
-    const formatLine = firstNewline === -1 ? record : record.substring(0, firstNewline)
-    const nameStatusBlock = firstNewline === -1 ? '' : record.substring(firstNewline + 1)
-
-    const fields = formatLine.split(FIELD_SEP)
-    if (fields.length < 12) continue
+    const fields = record.split(FIELD_SEP)
+    if (fields.length < 13) continue
 
     const [
       hash, shortHash, subject, body,
       authorName, authorEmail, authorDateISO,
       committerName, committerEmail, committerDateISO,
       refDecoration, parentStr,
+      nameStatusBlock,
     ] = fields
 
     const bodyLines = body.trim() ? body.trim().split('\n').map((l) => l.trim()) : []

@@ -266,4 +266,6 @@ export interface SystemAPI {
   setCommitSortOrder(order: 'topo' | 'date'): void
   getGitPath(): Promise<string>
   setGitPath(path: string): void
+  getVerboseLogging(): Promise<boolean>
+  setVerboseLogging(enabled: boolean): void
 }
