@@ -370,7 +370,7 @@ function BranchItem({
                     <div className="max-h-[200px] overflow-y-auto">
                     {remotes.map(remote => (
                       remote.branches.map(b => {
-                        const remoteBranchName = `${remote.name}/${b}`
+                        const remoteBranchName = `${remote.name}/${b.name}`
                         const isTracked = branch.upstream === remoteBranchName
                         return (
                           <button
