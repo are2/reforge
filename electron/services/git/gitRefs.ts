@@ -154,29 +154,48 @@ export async function getRemotes(repoPath: string): Promise<GitRemote[]> {
 
   const remoteNames = remoteResult.stdout.trim().split('\n').filter(Boolean)
 
-  // Get remote tracking branches
+  // Get remote tracking branches with tips
   const branchResult = await runGit(repoPath, [
     'branch',
-    '-r',
+    '-rvv',
     '--no-color',
+    '--no-abbrev',
   ])
 
-  const remoteBranches = branchResult.exitCode === 0
-    ? branchResult.stdout.split('\n').map((l) => l.trim()).filter(Boolean)
-    : []
+  const remoteBranchInfo: { fullName: string; tip: string }[] = []
+  if (branchResult.exitCode === 0) {
+    for (const line of branchResult.stdout.split('\n')) {
+      const trimmed = line.trim()
+      if (!trimmed) continue
+      // skip symbolic refs like "origin/HEAD -> origin/master"
+      if (trimmed.includes(' -> ')) continue
 
-  return await Promise.all(remoteNames.map(async (name) => {
-    const prefix = `${name}/`
-    const branches = remoteBranches
-      .filter((b) => b.startsWith(prefix) && !b.includes('->'))
-      .map((b) => b.slice(prefix.length))
+      // Format: "origin/master  8321689 [ahead 1] Commit message"
+      // or "origin/master  8321689 Commit message"
+      const match = trimmed.match(/^(\S+)\s+([0-9a-f]+)/)
+      if (match) {
+        remoteBranchInfo.push({ fullName: match[1], tip: match[2] })
+      }
+    }
+  }
 
-    // Fetch the URL
-    const urlResult = await runGit(repoPath, ['remote', 'get-url', name])
-    const url = urlResult.exitCode === 0 ? urlResult.stdout.trim() : undefined
+  return await Promise.all(
+    remoteNames.map(async (name) => {
+      const prefix = `${name}/`
+      const branches = remoteBranchInfo
+        .filter((b) => b.fullName.startsWith(prefix))
+        .map((b) => ({
+          name: b.fullName.slice(prefix.length),
+          tip: b.tip,
+        }))
 
-    return { name, branches, url }
-  }))
+      // Fetch the URL
+      const urlResult = await runGit(repoPath, ['remote', 'get-url', name])
+      const url = urlResult.exitCode === 0 ? urlResult.stdout.trim() : undefined
+
+      return { name, branches, url }
+    }),
+  )
 }
 
 // ── Tags ───────────────────────────────────────────────────────

@@ -74,10 +74,15 @@ export interface GitBranch {
   children?: GitBranch[]
 }
 
+export interface RemoteBranch {
+  name: string
+  tip: string
+}
+
 export interface GitRemote {
   name: string
   url?: string
-  branches: string[]
+  branches: RemoteBranch[]
 }
 
 export interface GitTag {
@@ -187,6 +192,7 @@ export interface GitAPI {
   getCommitDetail(repoPath: string, hash: string): Promise<GitCommit>
   getLog(repoPath: string, limit?: number): Promise<GitCommit[]>
   checkoutBranch(repoPath: string, branch: string): Promise<void>
+  checkoutRemoteBranch(repoPath: string, remote: string, branch: string): Promise<void>
   fetch(repoPath: string): Promise<void>
   getLocalChanges(repoPath: string): Promise<LocalChangesData>
   getFileDiff(repoPath: string, filePath: string, staged: boolean, amend?: boolean, revision?: string): Promise<FileDiff>

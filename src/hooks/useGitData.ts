@@ -208,6 +208,23 @@ export function useGitData(repoPath: string | null) {
   }, [loadRepo, handleError])
 
   /**
+   * Checkout a remote branch as a local tracking branch.
+   */
+  const checkoutRemoteBranch = useCallback(async (remote: string, branch: string) => {
+    const currentPath = repoPathRef.current
+    if (!currentPath) return
+
+    setState((prev) => ({ ...prev, loading: true }))
+    try {
+      await window.git.checkoutRemoteBranch(currentPath, remote, branch)
+      await loadRepo(currentPath)
+    } catch (err) {
+      handleError(err, 'Checkout failed', 'checkoutRemoteBranch')
+      throw err
+    }
+  }, [loadRepo, handleError])
+
+  /**
    * Fetch from remotes
    */
   const fetch = useCallback(async () => {
@@ -742,6 +759,7 @@ export function useGitData(repoPath: string | null) {
     loadCommitDetail,
     refresh,
     checkoutBranch,
+    checkoutRemoteBranch,
     createBranch,
     fetch,
     loadLocalChanges,
@@ -792,5 +810,3 @@ export function useGitData(repoPath: string | null) {
     stashDrop,
   }
 }
-
-

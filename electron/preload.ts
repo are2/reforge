@@ -17,6 +17,9 @@ const gitApi: GitAPI = {
   checkoutBranch: (repoPath: string, branch: string) =>
     ipcRenderer.invoke('git:checkoutBranch', repoPath, branch),
 
+  checkoutRemoteBranch: (repoPath: string, remote: string, branch: string) =>
+    ipcRenderer.invoke('git:checkoutRemoteBranch', repoPath, remote, branch),
+
   fetch: (repoPath: string) =>
     ipcRenderer.invoke('git:fetch', repoPath),
 

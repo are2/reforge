@@ -77,6 +77,7 @@ interface LeftSidebarProps {
   onPush: (branch: string, force: boolean) => Promise<void>
   onRemoveTag: (name: string, push: boolean) => Promise<void>
   onDeleteRemoteBranch: (remote: string, branch: string) => Promise<void>
+  onCheckoutRemoteBranch?: (remote: string, branch: string) => Promise<void>
   onStashApply: (index: number) => Promise<void>
   onStashPop: (index: number) => Promise<void>
   onStashDrop: (index: number) => Promise<void>
@@ -550,11 +551,17 @@ function TagItem({
 function RemoteBranchItem({
   remoteName,
   branchName,
+  tip,
+  onBranchSelect,
   onDeleteRemoteBranch,
+  onCheckoutRemoteBranch,
 }: {
   remoteName: string
   branchName: string
+  tip: string
+  onBranchSelect: (tip: string) => void
   onDeleteRemoteBranch: (remote: string, branch: string) => Promise<void>
+  onCheckoutRemoteBranch?: (remote: string, branch: string) => Promise<void>
 }) {
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -583,7 +590,6 @@ function RemoteBranchItem({
     setContextMenu({ x: e.clientX, y: e.clientY })
     setShowDeleteConfirm(false)
   }
-
   const handleConfirmDelete = async () => {
     if (isDeleting) return
     setIsDeleting(true)
@@ -599,15 +605,26 @@ function RemoteBranchItem({
     }
   }
 
+  const handleCheckout = async () => {
+    if (!onCheckoutRemoteBranch) return
+    try {
+      await onCheckoutRemoteBranch(remoteName, branchName)
+      setContextMenu(null)
+    } catch (err: any) {
+      setError(err.message || 'Failed to checkout branch')
+    }
+  }
+
   return (
     <div>
-      <div
+      <button
+        onClick={() => onBranchSelect(tip)}
         onContextMenu={handleContextMenu}
-        className="flex items-center gap-1 py-0.5 pl-8 pr-2 text-xs text-neutral-500 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700"
+        className="flex w-full items-center gap-1 py-0.5 pl-8 pr-2 text-xs text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-700 dark:hover:text-neutral-50"
       >
         <Icon name="branch" size={12} className="text-neutral-400 dark:text-neutral-500" />
         <span className="truncate">{branchName}</span>
-      </div>
+      </button>
 
       {contextMenu && createPortal(
         <div
@@ -661,12 +678,22 @@ function RemoteBranchItem({
               </div>
             </div>
           ) : (
-            <button
-              onClick={() => setShowDeleteConfirm(true)}
-              className="flex w-full items-center px-3 py-1.5 text-xs text-red-600 hover:bg-neutral-100 dark:text-red-400 dark:hover:bg-neutral-700"
-            >
-              Delete '{branchName}' from '{remoteName}'
-            </button>
+            <>
+              {onCheckoutRemoteBranch && (
+                <button
+                  onClick={handleCheckout}
+                  className="flex w-full items-center px-3 py-1.5 text-xs text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700"
+                >
+                  Checkout '{branchName}'
+                </button>
+              )}
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="flex w-full items-center px-3 py-1.5 text-xs text-red-600 hover:bg-neutral-100 dark:text-red-400 dark:hover:bg-neutral-700"
+              >
+                Delete '{branchName}' from '{remoteName}'
+              </button>
+            </>
           )}
         </div>,
         document.body
@@ -674,6 +701,7 @@ function RemoteBranchItem({
     </div>
   )
 }
+
 
 // ── Stash tree item ─────────────────────────────────────────────
 
@@ -780,6 +808,7 @@ export function LeftSidebar({
   onPush,
   onRemoveTag,
   onDeleteRemoteBranch,
+  onCheckoutRemoteBranch,
   onStashApply,
   onStashPop,
   onStashDrop,
@@ -868,10 +897,13 @@ export function LeftSidebar({
                 </div>
                 {remote.branches.map((b) => (
                   <RemoteBranchItem
-                    key={b}
+                    key={b.name}
                     remoteName={remote.name}
-                    branchName={b}
+                    branchName={b.name}
+                    tip={b.tip}
+                    onBranchSelect={onBranchSelect}
                     onDeleteRemoteBranch={onDeleteRemoteBranch}
+                    onCheckoutRemoteBranch={onCheckoutRemoteBranch}
                   />
                 ))}
               </div>

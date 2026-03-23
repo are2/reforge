@@ -61,6 +61,10 @@ function AppLayout() {
     gitData.checkoutBranch(name)
   }, [gitData.checkoutBranch])
 
+  const handleCheckoutRemoteBranch = useCallback(async (remote: string, branch: string) => {
+    await gitData.checkoutRemoteBranch(remote, branch)
+  }, [gitData.checkoutRemoteBranch])
+
   /** Wrap commit to switch view back to history on success. */
   const handleCommit = useCallback(async (message: string, amend?: boolean) => {
     await gitData.commit(message, amend)
@@ -264,6 +268,7 @@ function AppLayout() {
             onPush={gitData.push}
             onRemoveTag={gitData.deleteTag}
             onDeleteRemoteBranch={gitData.deleteRemoteBranch}
+            onCheckoutRemoteBranch={handleCheckoutRemoteBranch}
             onStashApply={gitData.stashApply}
             onStashPop={gitData.stashPop}
             onStashDrop={gitData.stashDrop}

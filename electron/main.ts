@@ -5,7 +5,7 @@ import fs from 'node:fs'
 import { getLog } from './services/git/gitLog'
 import { getAllRefs } from './services/git/gitRefs'
 import { getCommitDetail, getFileTree, getFileContent } from './services/git/gitShow'
-import { checkoutBranch } from './services/git/gitCheckout'
+import { checkoutBranch, checkoutRemoteBranch } from './services/git/gitCheckout'
 import { gitFetch } from './services/git/gitFetch'
 import { getLocalChanges } from './services/git/gitStatus'
 import { getFileDiff } from './services/git/gitDiff'
@@ -614,6 +614,17 @@ app.whenReady().then(() => {
       throw new Error('Invalid branch name')
     }
     await checkoutBranch(repoPath, branch)
+  })
+
+  ipcMain.handle('git:checkoutRemoteBranch', async (_event, repoPath: unknown, remote: unknown, branch: unknown) => {
+    validatePath(repoPath)
+    if (!remote || typeof remote !== 'string') {
+      throw new Error('Invalid remote name')
+    }
+    if (!branch || typeof branch !== 'string') {
+      throw new Error('Invalid branch name')
+    }
+    await checkoutRemoteBranch(repoPath, remote, branch)
   })
 
   // ── Git: fetch ───────────────────────────────────────────────
