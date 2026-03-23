@@ -26,28 +26,8 @@ export function MergeConflictTool({
   const [resolvedContent, setResolvedContent] = useState('')
   const [blockResolutions, setBlockResolutions] = useState<Record<string, 'ours' | 'theirs' | 'manual'>>({})
 
-  // Synchronization for side-by-side scrolling
-  const oursScrollRef = useRef<HTMLDivElement>(null)
-  const theirsScrollRef = useRef<HTMLDivElement>(null)
-  const isSyncingRef = useRef(false)
-
-  const handleScroll = (source: 'ours' | 'theirs') => {
-    if (isSyncingRef.current) return
-    isSyncingRef.current = true
-
-    const sourceEl = source === 'ours' ? oursScrollRef.current : theirsScrollRef.current
-    const targetEl = source === 'ours' ? theirsScrollRef.current : oursScrollRef.current
-
-    if (sourceEl && targetEl) {
-      targetEl.scrollTop = sourceEl.scrollTop
-      targetEl.scrollLeft = sourceEl.scrollLeft
-    }
-
-    // Reset flag after browser has handled the scroll
-    requestAnimationFrame(() => {
-      isSyncingRef.current = false
-    })
-  }
+  // Synchronization for side-by-side scrolling is now handled by a single scroll container
+  const scrollAreaRef = useRef<HTMLDivElement>(null)
 
   // Update selected file when conflicts list changes (e.g. after a resolution)
   useEffect(() => {
@@ -167,45 +147,54 @@ export function MergeConflictTool({
     return lines.length
   }
 
-  const renderSide = (side: 'ours' | 'theirs') => {
-    if (!details) return null
+  const renderBlockRow = (block: ConflictBlock, idx: number) => {
+    const maxLines = block.type === 'conflict' 
+      ? Math.max(getLineCount(block.ours), getLineCount(block.theirs))
+      : getLineCount(block.content)
 
     return (
-      <div 
-        className={`side-pane ${side}-pane`}
-        ref={side === 'ours' ? oursScrollRef : theirsScrollRef}
-        onScroll={() => handleScroll(side)}
-      >
-        {details.blocks.map((block: ConflictBlock, idx) => {
-          const maxLines = block.type === 'conflict' 
-            ? Math.max(getLineCount(block.ours), getLineCount(block.theirs))
-            : getLineCount(block.content)
-
-          return (
-            <div key={block.id + idx} className={`block-item ${block.type} ${blockResolutions[block.id] === side ? 'active' : ''}`}>
-              {block.type === 'stable' ? (
-                <pre className="stable-text">{block.content}</pre>
-              ) : (
-                <div className={`conflict-side ${side} ${blockResolutions[block.id] === side ? 'active' : ''}`}>
-                  <div className="side-header">
-                    <span className="label">
-                      {side === 'ours' 
-                        ? `Ours: ${block.oursHeader || 'HEAD'}`
-                        : `Theirs: ${block.theirsHeader || 'Remote'}`}
-                    </span>
-                    <button 
-                      className="select-btn"
-                      onClick={() => resolveBlock(block.id, side)}
-                    >
-                      {blockResolutions[block.id] === side ? 'Selected' : `Select ${side === 'ours' ? 'Ours' : 'Theirs'}`}
-                    </button>
-                  </div>
-                  <pre>{padLines(side === 'ours' ? block.ours : block.theirs, maxLines)}</pre>
-                </div>
-              )}
+      <div key={block.id + idx} className={`block-row ${block.type}`}>
+        {/* Ours side */}
+        <div className={`side-pane ours-pane ${block.type === 'conflict' ? (blockResolutions[block.id] === 'ours' ? 'active' : '') : ''}`}>
+          {block.type === 'stable' ? (
+            <pre className="stable-text">{block.content}</pre>
+          ) : (
+            <div className={`conflict-side ours ${blockResolutions[block.id] === 'ours' ? 'active' : ''}`}>
+              <div className="side-header">
+                <span className="label">Ours: {block.oursHeader || 'HEAD'}</span>
+                <button 
+                  className="select-btn"
+                  onClick={() => resolveBlock(block.id, 'ours')}
+                >
+                  {blockResolutions[block.id] === 'ours' ? 'Selected' : 'Select Ours'}
+                </button>
+              </div>
+              <pre>{padLines(block.ours, maxLines)}</pre>
             </div>
-          )
-        })}
+          )}
+        </div>
+
+        <div className="vertical-divider" />
+
+        {/* Theirs side */}
+        <div className={`side-pane theirs-pane ${block.type === 'conflict' ? (blockResolutions[block.id] === 'theirs' ? 'active' : '') : ''}`}>
+          {block.type === 'stable' ? (
+            <pre className="stable-text">{block.content}</pre>
+          ) : (
+            <div className={`conflict-side theirs ${blockResolutions[block.id] === 'theirs' ? 'active' : ''}`}>
+              <div className="side-header">
+                <span className="label">Theirs: {block.theirsHeader || 'Remote'}</span>
+                <button 
+                  className="select-btn"
+                  onClick={() => resolveBlock(block.id, 'theirs')}
+                >
+                  {blockResolutions[block.id] === 'theirs' ? 'Selected' : 'Select Theirs'}
+                </button>
+              </div>
+              <pre>{padLines(block.theirs, maxLines)}</pre>
+            </div>
+          )}
+        </div>
       </div>
     )
   }
@@ -269,10 +258,8 @@ export function MergeConflictTool({
               )}
             </div>
             
-            <div className="blocks-viewer-container side-by-side">
-              {renderSide('ours')}
-              <div className="vertical-spacer" />
-              {renderSide('theirs')}
+            <div className="blocks-viewer-container unified-scroll" ref={scrollAreaRef}>
+              {details.blocks.map((block, idx) => renderBlockRow(block, idx))}
             </div>
             
             <div className="resolution-editor">
@@ -437,75 +424,73 @@ export function MergeConflictTool({
         
         .blocks-viewer-container {
           flex: 2;
-          overflow: hidden;
+          overflow: auto;
           background: #FAFAFA;
           border-bottom: 1px solid #E4E4E7;
           display: flex;
+          flex-direction: column;
         }
         .dark .blocks-viewer-container {
-          background: #0F1115;
+          background: #111216;
           border-bottom-color: #2A2A30;
         }
         
-        .side-pane {
-          flex: 1;
-          overflow: auto;
-          display: flex;
-          flex-direction: column;
-          container-type: inline-size;
-        }
-
-        .side-pane::-webkit-scrollbar {
+        .blocks-viewer-container::-webkit-scrollbar {
           width: 8px;
           height: 8px;
         }
-        .side-pane::-webkit-scrollbar-track {
+        .blocks-viewer-container::-webkit-scrollbar-track {
           background: transparent;
         }
-        .side-pane::-webkit-scrollbar-thumb {
+        .blocks-viewer-container::-webkit-scrollbar-thumb {
           background: #D4D4D8;
           border-radius: 4px;
         }
-        .dark .side-pane::-webkit-scrollbar-thumb {
+        .dark .blocks-viewer-container::-webkit-scrollbar-thumb {
           background: #2A2A30;
         }
-        .side-pane::-webkit-scrollbar-thumb:hover {
+        .blocks-viewer-container::-webkit-scrollbar-thumb:hover {
           background: #A1A1AA;
         }
-        .dark .side-pane::-webkit-scrollbar-thumb:hover {
+        .dark .blocks-viewer-container::-webkit-scrollbar-thumb:hover {
           background: #3F3F46;
         }
 
-        .vertical-spacer {
-          width: 2px;
-          background: #E4E4E7;
-          height: 100%;
-          box-shadow: 0 0 10px rgba(0,0,0,0.1);
-          position: relative;
-          z-index: 15;
-        }
-        .dark .vertical-spacer {
-          background: #2A2A30;
-          box-shadow: 0 0 10px rgba(0,0,0,0.5);
-        }
-        
-        .block-item {
-          padding: 0;
+        .block-row {
+          display: flex;
+          width: 100%;
           border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-          min-width: fit-content;
+          min-width: min-content;
         }
-        .dark .block-item {
+        .dark .block-row {
           border-bottom-color: rgba(255, 255, 255, 0.03);
         }
 
+        .side-pane {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          min-width: 0;
+          container-type: inline-size;
+        }
+
+        .vertical-divider {
+          width: 1px;
+          background: #E4E4E7;
+          flex-shrink: 0;
+        }
+        .dark .vertical-divider {
+          background: #2A2A30;
+        }
+        
         .stable-text {
           margin: 0;
-          padding: 8px 16px;
+          padding: 12px 16px;
           font-family: var(--font-mono);
           font-size: 0.75rem;
           color: #52525B;
           white-space: pre;
-          line-height: 1.5;
+          line-height: 1.6;
         }
         .dark .stable-text {
           color: #71717A;
@@ -516,23 +501,30 @@ export function MergeConflictTool({
           flex-direction: column;
           transition: all 0.2s ease;
           opacity: 0.8;
-          min-height: 100px;
+          flex: 1;
+          min-height: 80px;
         }
-        .conflict-side.ours { background: rgba(168, 85, 247, 0.05); } 
-        .conflict-side.theirs { background: rgba(20, 184, 166, 0.05); } 
+        .conflict-side.ours { background: rgba(168, 85, 247, 0.03); } 
+        .conflict-side.theirs { background: rgba(20, 184, 166, 0.03); } 
         
-        .conflict-side.active {
+        .side-pane.active {
           opacity: 1;
-          box-shadow: inset 0 0 20px rgba(0,0,0,0.05);
+          background: rgba(168, 85, 247, 0.08);
         }
-        .dark .conflict-side.active {
-          box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+        .dark .side-pane.active {
+          background: rgba(168, 85, 247, 0.12);
+        }
+        .theirs-pane.active {
+          background: rgba(20, 184, 166, 0.08);
+        }
+        .dark .theirs-pane.active {
+          background: rgba(20, 184, 166, 0.12);
         }
         
-        .ours.active { background: rgba(168, 85, 247, 0.1); border-left: 2px solid #9333ea; }
-        .theirs.active { background: rgba(20, 184, 166, 0.1); border-left: 2px solid #0d9488; }
-        .dark .ours.active { background: rgba(168, 85, 247, 0.15); border-left-color: #a855f7; }
-        .dark .theirs.active { background: rgba(20, 184, 166, 0.15); border-left-color: #14b8a6; }
+        .ours.active { border-left: 2px solid #9333ea; }
+        .theirs.active { border-left: 2px solid #0d9488; }
+        .dark .ours.active { border-left-color: #a855f7; }
+        .dark .theirs.active { border-left-color: #14b8a6; }
         
         .side-header {
           display: flex;
@@ -545,7 +537,7 @@ export function MergeConflictTool({
           top: 0;
           left: 0;
           width: 100cqw;
-          z-index: 10;
+          z-index: 5;
           box-sizing: border-box;
         }
         .dark .side-header {
@@ -600,7 +592,7 @@ export function MergeConflictTool({
         
         .conflict-side pre {
           margin: 0;
-          padding: 16px;
+          padding: 12px 16px;
           font-family: var(--font-mono);
           font-size: 0.75rem;
           white-space: pre;
