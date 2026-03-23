@@ -44,13 +44,14 @@ function formatDate(isoDate: string): string {
 }
 
 const FIELD_SEP = '\x1f'
+const RECORD_SEP = '\x1e'
 
 const SHOW_FORMAT = [
   '%H', '%h', '%s', '%b',
   '%an', '%ae', '%aI',
   '%cn', '%ce', '%cI',
   '%D', '%P',
-].join(FIELD_SEP)
+].join(FIELD_SEP) + RECORD_SEP
 
 function parseRefDecoration(raw: string): GitRef[] {
   if (!raw.trim()) return []
@@ -87,14 +88,17 @@ export async function getCommitDetail(
     '--name-status',
   ])
 
-  // The first line contains the formatted fields, followed by file changes
-  const firstNewline = stdout.indexOf('\n')
-  const formatLine = firstNewline === -1 ? stdout : stdout.substring(0, firstNewline)
-  const nameStatusBlock = firstNewline === -1 ? '' : stdout.substring(firstNewline + 1)
+  // The format line is explicitly terminated by RECORD_SEP, followed by file changes
+  const splitIndex = stdout.indexOf(RECORD_SEP)
+  if (splitIndex === -1) {
+    throw new Error(`getCommitDetail: unexpected format output for ${hash}`)
+  }
+  const formatLine = stdout.substring(0, splitIndex)
+  const nameStatusBlock = stdout.substring(splitIndex + 1)
 
   const fields = formatLine.split(FIELD_SEP)
   if (fields.length < 12) {
-    throw new Error(`getCommitDetail: unexpected format output for ${hash}`)
+    throw new Error(`getCommitDetail: unexpected format output for ${hash} (fields: ${fields.length})`)
   }
 
   const [
