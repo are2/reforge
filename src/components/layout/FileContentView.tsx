@@ -106,8 +106,8 @@ export function FileContentView({ content, loading }: FileContentViewProps) {
   const lang = getLanguage(content.mimeType, content.path)
 
   return (
-    <div className="h-full overflow-auto bg-neutral-900">
-      <pre className={`language-${lang} m-0 h-full p-4 text-xs`}>
+    <div className="h-full overflow-auto bg-neutral-0 dark:bg-neutral-900 text-[0.8rem] leading-tight">
+      <pre className={`language-${lang} m-0 h-full p-3 font-mono`}>
         <code ref={codeRef} className={`language-${lang}`}>
           {content.content}
         </code>
