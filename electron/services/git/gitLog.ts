@@ -105,12 +105,15 @@ function formatDate(isoDate: string): string {
 export async function getLog(
   repoPath: string,
   limit = 200,
-  order: 'topo' | 'date' = 'topo'
+  order: 'topo' | 'date' = 'topo',
+  showStashes = false
 ): Promise<GitCommit[]> {
   const orderFlag = order === 'topo' ? '--topo-order' : '--date-order'
+  const refsFlag = showStashes ? '--all' : '--branches --remotes --tags HEAD'
+
   const stdout = await runGitOrThrow(repoPath, [
     'log',
-    '--all',
+    ...refsFlag.split(' '),
     orderFlag,
     `--max-count=${limit}`,
     `--pretty=format:${RECORD_SEP}${LOG_FORMAT}${FIELD_SEP}`,

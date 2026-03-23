@@ -268,4 +268,6 @@ export interface SystemAPI {
   setGitPath(path: string): void
   getVerboseLogging(): Promise<boolean>
   setVerboseLogging(enabled: boolean): void
+  getShowStashes(): Promise<boolean>
+  setShowStashes(enabled: boolean): void
 }

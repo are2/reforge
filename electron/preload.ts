@@ -139,6 +139,8 @@ const systemApi: SystemAPI = {
   setGitPath: (path) => ipcRenderer.send('system:setGitPath', path),
   getVerboseLogging: () => ipcRenderer.invoke('system:getVerboseLogging'),
   setVerboseLogging: (enabled) => ipcRenderer.send('system:setVerboseLogging', enabled),
+  getShowStashes: () => ipcRenderer.invoke('system:getShowStashes'),
+  setShowStashes: (enabled: boolean) => ipcRenderer.send('system:setShowStashes', enabled),
 }
 
 contextBridge.exposeInMainWorld('git', gitApi)

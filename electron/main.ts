@@ -62,6 +62,7 @@ interface AppSettings {
   gitPath?: string
   commitSortOrder?: 'topo' | 'date'
   verboseLogging?: boolean
+  showStashes?: boolean
 }
 
 const getWindowStatePath = () => path.join(app.getPath('userData'), 'window-state.json')
@@ -132,7 +133,8 @@ function loadSettings(): AppSettings {
     theme: 'dark',
     gitPath: 'system',
     commitSortOrder: 'topo',
-    verboseLogging: false
+    verboseLogging: false,
+    showStashes: false
   }
 
   try {
@@ -473,6 +475,15 @@ app.whenReady().then(() => {
     setVerboseLogging(enabled)
   })
 
+  ipcMain.handle('system:getShowStashes', () => {
+    return !!currentSettings.showStashes
+  })
+
+  ipcMain.on('system:setShowStashes', (_event, enabled: boolean) => {
+    currentSettings.showStashes = enabled
+    saveSettings(currentSettings)
+  })
+
   ipcMain.on('system:quit', () => {
     app.quit()
   })
@@ -540,9 +551,10 @@ app.whenReady().then(() => {
     validatePath(repoPath)
 
     const order = currentSettings.commitSortOrder || 'topo'
+    const showStashes = !!currentSettings.showStashes
     const [refsResult, commits, localChanges, isPrSupported] = await Promise.all([
       getAllRefs(repoPath),
-      getLog(repoPath, 200, order),
+      getLog(repoPath, 200, order, showStashes),
       getLocalChanges(repoPath),
       isPullRequestSupported(repoPath),
     ])
