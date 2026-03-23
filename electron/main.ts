@@ -63,6 +63,7 @@ interface AppSettings {
   commitSortOrder?: 'topo' | 'date'
   verboseLogging?: boolean
   showStashes?: boolean
+  mergeConflictSyntaxHighlighting?: boolean
 }
 
 const getWindowStatePath = () => path.join(app.getPath('userData'), 'window-state.json')
@@ -134,7 +135,8 @@ function loadSettings(): AppSettings {
     gitPath: 'system',
     commitSortOrder: 'topo',
     verboseLogging: false,
-    showStashes: false
+    showStashes: false,
+    mergeConflictSyntaxHighlighting: false
   }
 
   try {
@@ -481,6 +483,15 @@ app.whenReady().then(() => {
 
   ipcMain.on('system:setShowStashes', (_event, enabled: boolean) => {
     currentSettings.showStashes = enabled
+    saveSettings(currentSettings)
+  })
+  
+  ipcMain.handle('system:getMergeConflictSyntaxHighlighting', () => {
+    return !!currentSettings.mergeConflictSyntaxHighlighting
+  })
+
+  ipcMain.on('system:setMergeConflictSyntaxHighlighting', (_event, enabled: boolean) => {
+    currentSettings.mergeConflictSyntaxHighlighting = enabled
     saveSettings(currentSettings)
   })
 

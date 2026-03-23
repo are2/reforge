@@ -270,4 +270,6 @@ export interface SystemAPI {
   setVerboseLogging(enabled: boolean): void
   getShowStashes(): Promise<boolean>
   setShowStashes(enabled: boolean): void
+  getMergeConflictSyntaxHighlighting(): Promise<boolean>
+  setMergeConflictSyntaxHighlighting(enabled: boolean): void
 }

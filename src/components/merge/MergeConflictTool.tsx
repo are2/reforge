@@ -2,6 +2,95 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { Modal } from '../ui/Modal'
 import { Icon } from '../ui/Icon'
 import { StatusEntry, ConflictDetails, ConflictBlock } from '../../../electron/shared/types'
+import Prism from 'prismjs'
+import 'prismjs/themes/prism-tomorrow.css'
+import { getLanguage } from '../../utils/syntax'
+
+// Standard languages for Prism
+import 'prismjs/components/prism-clike'
+import 'prismjs/components/prism-javascript'
+import 'prismjs/components/prism-typescript'
+import 'prismjs/components/prism-jsx'
+import 'prismjs/components/prism-tsx'
+import 'prismjs/components/prism-json'
+import 'prismjs/components/prism-markdown'
+import 'prismjs/components/prism-css'
+import 'prismjs/components/prism-bash'
+import 'prismjs/components/prism-python'
+import 'prismjs/components/prism-rust'
+import 'prismjs/components/prism-go'
+
+interface CodeBlockProps {
+  content: string
+  language: string
+  enabled: boolean
+  className?: string
+}
+
+function HighlightedCode({ content, language, enabled, className }: CodeBlockProps) {
+  const codeRef = useRef<HTMLElement>(null)
+
+  useEffect(() => {
+    if (enabled && codeRef.current) {
+      Prism.highlightElement(codeRef.current)
+    }
+  }, [content, enabled, language])
+
+  if (!enabled) {
+    return <pre className={className}>{content}</pre>
+  }
+
+  return (
+    <pre className={`${className} language-${language}`}>
+      <code ref={codeRef} className={`language-${language}`}>
+        {content}
+      </code>
+    </pre>
+  )
+}
+
+interface ResolutionEditorProps {
+  value: string
+  onChange: (value: string) => void
+  language: string
+}
+
+function ResolutionEditor({ value, onChange, language }: ResolutionEditorProps) {
+  const codeRef = useRef<HTMLElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const preRef = useRef<HTMLPreElement>(null)
+
+  useEffect(() => {
+    if (codeRef.current) {
+      Prism.highlightElement(codeRef.current)
+    }
+  }, [value, language])
+
+  const syncScroll = () => {
+    if (textareaRef.current && preRef.current) {
+      preRef.current.scrollTop = textareaRef.current.scrollTop
+      preRef.current.scrollLeft = textareaRef.current.scrollLeft
+    }
+  }
+
+  return (
+    <div className="resolution-editor-container">
+      <pre ref={preRef} className={`language-${language} resolution-highlight-overlay`} aria-hidden="true">
+        <code ref={codeRef} className={`language-${language}`}>
+          {value + (value.endsWith('\n') ? ' ' : '')}
+        </code>
+      </pre>
+      <textarea
+        ref={textareaRef}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onScroll={syncScroll}
+        spellCheck={false}
+        className="resolution-textarea"
+      />
+    </div>
+  )
+}
 
 interface MergeConflictToolProps {
   isOpen: boolean
@@ -25,6 +114,11 @@ export function MergeConflictTool({
   const [loading, setLoading] = useState(false)
   const [resolvedContent, setResolvedContent] = useState('')
   const [blockResolutions, setBlockResolutions] = useState<Record<string, 'ours' | 'theirs' | 'manual'>>({})
+  const [useHighlighting, setUseHighlighting] = useState(false)
+
+  useEffect(() => {
+    window.system.getMergeConflictSyntaxHighlighting().then(setUseHighlighting)
+  }, [])
 
   // Synchronization for side-by-side scrolling is now handled by a single scroll container
   const scrollAreaRef = useRef<HTMLDivElement>(null)
@@ -151,13 +245,20 @@ export function MergeConflictTool({
     const maxLines = block.type === 'conflict' 
       ? Math.max(getLineCount(block.ours), getLineCount(block.theirs))
       : getLineCount(block.content)
+    
+    const lang = details ? getLanguage('', details.path) : 'clike'
 
     return (
       <div key={block.id + idx} className={`block-row ${block.type}`}>
         {/* Ours side */}
         <div className={`side-pane ours-pane ${block.type === 'conflict' ? (blockResolutions[block.id] === 'ours' ? 'active' : '') : ''}`}>
           {block.type === 'stable' ? (
-            <pre className="stable-text">{block.content}</pre>
+            <HighlightedCode 
+              content={block.content} 
+              language={lang} 
+              enabled={useHighlighting} 
+              className="stable-text" 
+            />
           ) : (
             <div className={`conflict-side ours ${blockResolutions[block.id] === 'ours' ? 'active' : ''}`}>
               <div className="side-header">
@@ -169,7 +270,11 @@ export function MergeConflictTool({
                   {blockResolutions[block.id] === 'ours' ? 'Selected' : 'Select Ours'}
                 </button>
               </div>
-              <pre>{padLines(block.ours, maxLines)}</pre>
+              <HighlightedCode 
+                content={padLines(block.ours, maxLines)} 
+                language={lang} 
+                enabled={useHighlighting} 
+              />
             </div>
           )}
         </div>
@@ -179,7 +284,12 @@ export function MergeConflictTool({
         {/* Theirs side */}
         <div className={`side-pane theirs-pane ${block.type === 'conflict' ? (blockResolutions[block.id] === 'theirs' ? 'active' : '') : ''}`}>
           {block.type === 'stable' ? (
-            <pre className="stable-text">{block.content}</pre>
+            <HighlightedCode 
+              content={block.content} 
+              language={lang} 
+              enabled={useHighlighting} 
+              className="stable-text" 
+            />
           ) : (
             <div className={`conflict-side theirs ${blockResolutions[block.id] === 'theirs' ? 'active' : ''}`}>
               <div className="side-header">
@@ -191,7 +301,11 @@ export function MergeConflictTool({
                   {blockResolutions[block.id] === 'theirs' ? 'Selected' : 'Select Theirs'}
                 </button>
               </div>
-              <pre>{padLines(block.theirs, maxLines)}</pre>
+              <HighlightedCode 
+                content={padLines(block.theirs, maxLines)} 
+                language={lang} 
+                enabled={useHighlighting} 
+              />
             </div>
           )}
         </div>
@@ -244,11 +358,25 @@ export function MergeConflictTool({
                 >
                   Accept All Ours
                 </button>
+                <div className="h-4 w-[1px] bg-neutral-300 dark:bg-neutral-700 mx-1" />
+                <label className="flex items-center gap-2 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 cursor-pointer transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={useHighlighting}
+                    onChange={(e) => {
+                      const enabled = e.target.checked
+                      setUseHighlighting(enabled)
+                      window.system.setMergeConflictSyntaxHighlighting(enabled)
+                    }}
+                    className="w-3.5 h-3.5 rounded border-neutral-300 dark:border-neutral-700 text-accent-violet focus:ring-accent-violet pointer-events-auto"
+                  />
+                  <span>Highlight Syntax</span>
+                </label>
               </div>
-              <div className="filename-label truncate ml-4">{details.path}</div>
+              <div className="filename-label truncate ml-4 font-bold">{details.path}</div>
               {standalone && (
                 <button
-                  className="ml-auto flex items-center gap-2 px-4 py-1 text-xs font-bold rounded bg-accent-violet text-neutral-950 hover:opacity-90 disabled:opacity-50 transition-all"
+                  className="ml-auto flex items-center gap-2 px-4 py-1 text-xs font-bold rounded bg-accent-violet text-neutral-950 hover:opacity-90 disabled:opacity-50 transition-all shadow-sm"
                   onClick={handleResolve}
                   disabled={loading || !allResolved}
                 >
@@ -264,10 +392,10 @@ export function MergeConflictTool({
             
             <div className="resolution-editor">
               <div className="pane-header">Resolved Result (Live Preview / Edit)</div>
-              <textarea
-                value={resolvedContent}
-                onChange={(e) => setResolvedContent(e.target.value)}
-                spellCheck={false}
+              <ResolutionEditor 
+                value={resolvedContent} 
+                onChange={setResolvedContent} 
+                language={details ? getLanguage('', details.path) : 'clike'} 
               />
             </div>
           </div>
@@ -604,47 +732,98 @@ export function MergeConflictTool({
           display: flex;
           flex-direction: column;
           background: #FFFFFF;
-          min-height: 200px;
+          min-height: 250px;
+          border-top: 1px solid #E4E4E7;
         }
         .dark .resolution-editor {
           background: #0F1115;
+          border-top-color: #2A2A30;
         }
 
-        .resolution-editor textarea {
+        .resolution-editor-container {
           flex: 1;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .resolution-textarea, .resolution-highlight-overlay {
+          position: absolute;
+          top: 0;
+          left: 0;
           width: 100%;
-          border: none;
+          height: 100%;
           padding: 16px;
+          margin: 0;
           font-family: var(--font-mono);
           font-size: 0.85rem;
-          background: transparent;
-          color: #09090B;
-          resize: none;
           line-height: 1.6;
-        }
-        .dark .resolution-editor textarea {
-          color: #FAFAFA;
+          box-sizing: border-box;
+          white-space: pre-wrap;
+          word-break: break-all;
+          overflow: auto;
         }
 
-        .resolution-editor textarea:focus {
+        .resolution-textarea {
+          background: transparent;
+          color: transparent;
+          caret-color: #09090B;
+          resize: none;
+          border: none;
+          z-index: 2;
+        }
+        .dark .resolution-textarea {
+          caret-color: #FAFAFA;
+        }
+        .resolution-textarea:focus {
           outline: none;
+        }
+
+        .resolution-highlight-overlay {
+          z-index: 1;
+          pointer-events: none;
+        }
+
+        /* Prism override for resolution editor */
+        .resolution-highlight-overlay.language-none,
+        .resolution-highlight-overlay[class*="language-"] {
+          background: transparent;
         }
 
         .pane-header {
           padding: 6px 12px;
           background: #F4F4F5;
           font-size: 0.65rem;
-          font-weight: 600;
+          font-weight: 700;
           color: #71717A;
           text-transform: uppercase;
           border-bottom: 1px solid #E4E4E7;
-          border-top: 1px solid #E4E4E7;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
         }
         .dark .pane-header {
-          background: #222228;
+          background: #17181C;
           color: #A1A1AA;
           border-bottom-color: #2A2A30;
-          border-top-color: #2A2A30;
+        }
+
+        /* Prism tomorrow theme overrides for better integration */
+        code[class*="language-"],
+        pre[class*="language-"] {
+          font-family: var(--font-mono) !important;
+          font-size: 0.75rem !important;
+          text-shadow: none !important;
+        }
+
+        .side-pane pre[class*="language-"] {
+          margin: 0;
+          padding: 12px 16px;
+          background: transparent !important;
+        }
+
+        .stable-text.language-none,
+        .stable-text[class*="language-"] {
+          background: transparent;
         }
       `}</style>
     </div>

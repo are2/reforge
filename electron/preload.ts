@@ -141,6 +141,8 @@ const systemApi: SystemAPI = {
   setVerboseLogging: (enabled) => ipcRenderer.send('system:setVerboseLogging', enabled),
   getShowStashes: () => ipcRenderer.invoke('system:getShowStashes'),
   setShowStashes: (enabled: boolean) => ipcRenderer.send('system:setShowStashes', enabled),
+  getMergeConflictSyntaxHighlighting: () => ipcRenderer.invoke('system:getMergeConflictSyntaxHighlighting'),
+  setMergeConflictSyntaxHighlighting: (enabled: boolean) => ipcRenderer.send('system:setMergeConflictSyntaxHighlighting', enabled),
 }
 
 contextBridge.exposeInMainWorld('git', gitApi)

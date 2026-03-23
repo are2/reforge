@@ -14,12 +14,14 @@ function SettingsLayout() {
   const [sortOrder, setSortOrder] = useState<'topo' | 'date'>('topo')
   const [verboseLogging, setVerboseLogging] = useState(false)
   const [showStashes, setShowStashes] = useState(false)
+  const [mergeConflictHighlighting, setMergeConflictHighlighting] = useState(false)
 
   useEffect(() => {
     window.system.getGitPath().then(setSelectedGitPath)
     window.system.getCommitSortOrder().then(setSortOrder)
     window.system.getVerboseLogging().then(setVerboseLogging)
     window.system.getShowStashes().then(setShowStashes)
+    window.system.getMergeConflictSyntaxHighlighting().then(setMergeConflictHighlighting)
     window.git.getDetectedGitVersions().then(setGitVersions)
     window.git.getGlobalConfig().then(config => {
       setGitName(config.name || '')
@@ -124,6 +126,49 @@ function SettingsLayout() {
                 <div className="h-1.5 w-full bg-neutral-200 rounded-full" />
                 <div className="h-1.5 w-2/3 bg-neutral-200 rounded-full" />
               </div>
+            </div>
+          </div>
+
+          <div className="space-y-4 pt-2">
+            <h3 className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">Features</h3>
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-3">
+                <label className="flex items-center gap-2 text-sm cursor-pointer text-neutral-700 dark:text-neutral-300">
+                  <input 
+                    type="checkbox" 
+                    checked={showStashes}
+                    onChange={(e) => {
+                      const enabled = e.target.checked
+                      setShowStashes(enabled)
+                      window.system.setShowStashes(enabled)
+                    }}
+                    className="w-4 h-4 rounded text-accent-violet bg-neutral-100 border-neutral-300 focus:ring-accent-violet dark:focus:ring-accent-violet dark:ring-offset-neutral-900 focus:ring-2 dark:bg-neutral-800 dark:border-neutral-600"
+                  />
+                  Show stashes in history graph
+                </label>
+              </div>
+              <p className="text-[10px] text-neutral-500 dark:text-neutral-400 ml-6 -mt-2">
+                Include `refs/stash` and associated commits in the history view.
+              </p>
+
+              <div className="flex items-center gap-3 pt-1">
+                <label className="flex items-center gap-2 text-sm cursor-pointer text-neutral-700 dark:text-neutral-300">
+                  <input 
+                    type="checkbox" 
+                    checked={mergeConflictHighlighting}
+                    onChange={(e) => {
+                      const enabled = e.target.checked
+                      setMergeConflictHighlighting(enabled)
+                      window.system.setMergeConflictSyntaxHighlighting(enabled)
+                    }}
+                    className="w-4 h-4 rounded text-accent-violet bg-neutral-100 border-neutral-300 focus:ring-accent-violet dark:focus:ring-accent-violet dark:ring-offset-neutral-900 focus:ring-2 dark:bg-neutral-800 dark:border-neutral-600"
+                  />
+                  Syntax highlighting in merge tool
+                </label>
+              </div>
+              <p className="text-[10px] text-neutral-500 dark:text-neutral-400 ml-6 -mt-2">
+                Enable Prism.js syntax highlighting in the merge conflict tool blocks.
+              </p>
             </div>
           </div>
         </section>
@@ -253,25 +298,6 @@ function SettingsLayout() {
               </div>
               <p className="text-[10px] text-neutral-500 dark:text-neutral-400 ml-6 -mt-2">
                 Log every git command to a local file for troubleshooting.
-              </p>
-
-              <div className="flex items-center gap-3 pt-1">
-                <label className="flex items-center gap-2 text-sm cursor-pointer text-neutral-700 dark:text-neutral-300">
-                  <input 
-                    type="checkbox" 
-                    checked={showStashes}
-                    onChange={(e) => {
-                      const enabled = e.target.checked
-                      setShowStashes(enabled)
-                      window.system.setShowStashes(enabled)
-                    }}
-                    className="w-4 h-4 rounded text-accent-violet bg-neutral-100 border-neutral-300 focus:ring-accent-violet dark:focus:ring-accent-violet dark:ring-offset-neutral-900 focus:ring-2 dark:bg-neutral-800 dark:border-neutral-600"
-                  />
-                  Show stashes in history graph
-                </label>
-              </div>
-              <p className="text-[10px] text-neutral-500 dark:text-neutral-400 ml-6 -mt-2">
-                Include `refs/stash` and associated commits in the history view.
               </p>
             </div>
           </div>
