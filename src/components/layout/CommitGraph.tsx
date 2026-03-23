@@ -12,7 +12,7 @@ const LANE_COLORS = [
   'var(--color-graph-5)',
 ]
 
-function laneColor(lane: number): string {
+export function laneColor(lane: number): string {
   return LANE_COLORS[lane % LANE_COLORS.length]
 }
 

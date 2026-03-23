@@ -5,7 +5,7 @@ import { Avatar } from '../ui/Avatar'
 import { BranchChip } from '../ui/BranchChip'
 import { Skeleton } from '../ui/Skeleton'
 import { Icon } from '../ui/Icon'
-import { CommitGraph, useGraphData } from './CommitGraph'
+import { CommitGraph, useGraphData, laneColor, type GraphRow } from './CommitGraph'
 import { MergeBanner } from '../merge/MergeBanner'
 
 interface HistoryPaneProps {
@@ -289,7 +289,7 @@ function CommitRow({
   commit: GitCommit
   isSelected: boolean
   onSelect: () => void
-  graphRow: { lane: number; activeLanes: number[]; connections: any[]; isRoot: boolean }
+  graphRow: GraphRow
   maxLane: number
   onCherryPick: (hash: string) => void
   onAddTag: () => void
@@ -336,20 +336,26 @@ function CommitRow({
       {/* Ref chips */}
       {commit.refs.length > 0 && (
         <div className="flex shrink-0 items-center gap-1">
-          {commit.refs.map((ref) => (
-            <BranchChip 
-              key={ref.name} 
-              name={ref.name} 
-              type={ref.type === 'tag' ? 'tag' : ref.type === 'head' ? 'local' : ref.type} 
-              onContextMenu={(e) => {
-                if (ref.type === 'tag') {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  onRemoveTag(ref.name, e.clientX, e.clientY)
-                }
-              }}
-            />
-          ))}
+          {[...commit.refs]
+            .sort((a, b) => {
+              const order = { head: 0, local: 1, remote: 2, tag: 3 }
+              return (order[a.type as keyof typeof order] ?? 4) - (order[b.type as keyof typeof order] ?? 4)
+            })
+            .map((ref) => (
+              <BranchChip 
+                key={ref.name} 
+                name={ref.name} 
+                type={ref.type === 'tag' ? 'tag' : ref.type === 'head' ? 'local' : ref.type} 
+                color={ref.type !== 'tag' ? laneColor(graphRow.lane) : undefined}
+                onContextMenu={(e) => {
+                  if (ref.type === 'tag') {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    onRemoveTag(ref.name, e.clientX, e.clientY)
+                  }
+                }}
+              />
+            ))}
         </div>
       )}
 

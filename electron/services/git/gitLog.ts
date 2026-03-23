@@ -40,16 +40,34 @@ function parseRefDecoration(raw: string): GitRef[] {
   if (!raw.trim()) return []
   return raw.split(',').map((r) => {
     const trimmed = r.trim()
+    
+    // With --decorate=full:
+    // HEAD -> refs/heads/main
+    // refs/heads/feature/foo
+    // refs/remotes/origin/main
+    // tag: refs/tags/v1.0
+
     if (trimmed.startsWith('HEAD -> ')) {
-      return { name: trimmed.replace('HEAD -> ', ''), type: 'head' as const }
+      const fullRef = trimmed.replace('HEAD -> ', '')
+      const name = fullRef.replace(/^refs\/heads\//, '')
+      return { name, type: 'head' as const }
     }
+    
     if (trimmed.startsWith('tag: ')) {
-      return { name: trimmed.replace('tag: ', ''), type: 'tag' as const }
+      const fullRef = trimmed.replace('tag: ', '')
+      const name = fullRef.replace(/^refs\/tags\//, '')
+      return { name, type: 'tag' as const }
     }
-    if (trimmed.includes('/')) {
-      // Could be origin/main etc.
-      return { name: trimmed, type: 'remote' as const }
+
+    if (trimmed.startsWith('refs/heads/')) {
+      return { name: trimmed.replace('refs/heads/', ''), type: 'local' as const }
     }
+
+    if (trimmed.startsWith('refs/remotes/')) {
+      // Keep everything after refs/remotes/ (usually origin/branch)
+      return { name: trimmed.replace('refs/remotes/', ''), type: 'remote' as const }
+    }
+
     return { name: trimmed, type: 'local' as const }
   })
 }
@@ -117,6 +135,7 @@ export async function getLog(
     orderFlag,
     `--max-count=${limit}`,
     `--pretty=format:${RECORD_SEP}${LOG_FORMAT}${FIELD_SEP}`,
+    '--decorate=full',
     '--name-status',
   ])
 
