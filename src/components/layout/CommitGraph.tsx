@@ -33,6 +33,7 @@ export interface GraphRow {
     type: 'straight' | 'merge' | 'fork'
   }[]
   isRoot: boolean
+  isHead: boolean
 }
 
 /**
@@ -58,7 +59,8 @@ export function computeGraphRows(commits: GitCommit[]): Map<string, GraphRow> {
 
     // ── Find or allocate a lane for this commit ─────────────────
     let myLane = lanes.indexOf(hash)
-    if (myLane === -1) {
+    const isHead = myLane === -1
+    if (isHead) {
       // Not yet expected by any lane — grab a free slot or extend
       const free = lanes.indexOf(null)
       if (free !== -1) {
@@ -172,6 +174,7 @@ export function computeGraphRows(commits: GitCommit[]): Map<string, GraphRow> {
       activeLanes: activeAfter,
       connections,
       isRoot,
+      isHead,
     })
   }
 
@@ -221,11 +224,18 @@ export function CommitGraph({ graphRow, maxLane }: CommitGraphProps) {
             graphRow.isRoot &&
             conn.fromLane === graphRow.lane &&
             conn.toLane === graphRow.lane
+          
+          // For a head commit's own lane (start of branch), only draw the bottom half (no line above dot)
+          const isHeadOwnLane =
+            graphRow.isHead &&
+            conn.fromLane === graphRow.lane &&
+            conn.toLane === graphRow.lane
+
           return (
             <line
               key={i}
               x1={x1}
-              y1={0}
+              y1={isHeadOwnLane ? midY : 0}
               x2={x2}
               y2={isRootOwnLane ? midY : h}
               stroke={conn.color}
