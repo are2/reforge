@@ -143,8 +143,12 @@ const systemApi: SystemAPI = {
   setShowStashes: (enabled: boolean) => ipcRenderer.send('system:setShowStashes', enabled),
   getMergeConflictSyntaxHighlighting: () => ipcRenderer.invoke('system:getMergeConflictSyntaxHighlighting'),
   setMergeConflictSyntaxHighlighting: (enabled: boolean) => ipcRenderer.send('system:setMergeConflictSyntaxHighlighting', enabled),
+  getDiffSyntaxHighlighting: () => ipcRenderer.invoke('system:getDiffSyntaxHighlighting'),
+  setDiffSyntaxHighlighting: (enabled: boolean) => ipcRenderer.send('system:setDiffSyntaxHighlighting', enabled),
   highlightCode: (code: string, lang: string, theme: 'light' | 'dark') =>
     ipcRenderer.invoke('system:highlightCode', code, lang, theme),
+  highlightLines: (lines: string[], lang: string, theme: 'light' | 'dark') =>
+    ipcRenderer.invoke('system:highlightLines', lines, lang, theme),
   openGitLog: () => ipcRenderer.send('system:openGitLog'),
 }
 

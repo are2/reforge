@@ -1,5 +1,7 @@
+import { useEffect, useState, useMemo } from 'react'
 import type { FileDiff } from '../../../electron/shared/types'
 import { Icon } from './Icon'
+import { getLanguage } from '../../utils/syntax'
 
 function formatSize(bytes?: number): string {
   if (bytes === undefined) return 'Unknown size'
@@ -14,6 +16,41 @@ interface DiffViewerProps {
 }
 
 export function DiffViewer({ diff, loading }: DiffViewerProps) {
+  const [highlightingEnabled, setHighlightingEnabled] = useState(false)
+  const [highlightedLines, setHighlightedLines] = useState<string[] | null>(null)
+  const [theme, setTheme] = useState<'light' | 'dark'>('dark')
+
+  useEffect(() => {
+    window.system.getTheme().then(setTheme)
+    window.system.onThemeUpdate(setTheme)
+    window.system.getDiffSyntaxHighlighting().then(setHighlightingEnabled)
+  }, [])
+
+  // Flatten all lines from all hunks for bulk highlighting
+  const allLines = useMemo(() => {
+    if (!diff) return []
+    return diff.hunks.flatMap(hunk => hunk.lines.map(line => line.content))
+  }, [diff])
+
+  useEffect(() => {
+    let isMounted = true
+    if (highlightingEnabled && diff && !diff.isBinary && allLines.length > 0) {
+      const lang = getLanguage('', diff.path)
+      window.system.highlightLines(allLines, lang, theme).then(results => {
+        if (isMounted) {
+          // Strip Shiki's <pre><code> wrappers
+          const stripped = results.map(html => 
+            html.replace(/^<pre[^>]*><code[^>]*>/, '').replace(/<\/code><\/pre>$/, '')
+          )
+          setHighlightedLines(stripped)
+        }
+      })
+    } else {
+      setHighlightedLines(null)
+    }
+    return () => { isMounted = false }
+  }, [allLines, highlightingEnabled, theme, diff])
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8 text-xs text-neutral-400 dark:text-neutral-500">
@@ -88,29 +125,58 @@ export function DiffViewer({ diff, loading }: DiffViewerProps) {
                   ? 'diff-remove bg-rose-500/10'
                   : ''
 
+            // Calculate global line index across all hunks
+            let lineIndex = li
+            for (let i = 0; i < hi; i++) {
+              lineIndex += diff.hunks[i].lines.length
+            }
+
+            const hLine = highlightedLines ? highlightedLines[lineIndex] : null
+
             return (
               <div key={li} className={`flex ${bgClass}`}>
                 {/* Old line number */}
                 <span className="inline-block w-10 shrink-0 select-none pr-1 text-right text-neutral-400 dark:text-neutral-500">
                   {line.oldLineNo ?? ''}
                 </span>
-                {/* New line number */}
-                <span className="inline-block w-10 shrink-0 select-none pr-1 text-right text-neutral-400 dark:text-neutral-500">
-                  {line.newLineNo ?? ''}
-                </span>
-                {/* Indicator */}
-                <span className={`inline-block w-4 shrink-0 select-none text-center ${
-                  line.type === 'add' ? 'text-emerald-500' : line.type === 'remove' ? 'text-rose-500' : 'text-neutral-400'
-                }`}>
-                  {line.type === 'add' ? '+' : line.type === 'remove' ? '-' : ' '}
-                </span>
-                {/* Content */}
-                <span className="whitespace-pre-wrap break-all pr-3">{line.content}</span>
-              </div>
-            )
-          })}
+                  {/* New line number */}
+                  <span className="inline-block w-10 shrink-0 select-none pr-1 text-right text-neutral-400 dark:text-neutral-500">
+                    {line.newLineNo ?? ''}
+                  </span>
+                  {/* Indicator */}
+                  <span className={`inline-block w-4 shrink-0 select-none text-center ${
+                    line.type === 'add' ? 'text-emerald-500' : line.type === 'remove' ? 'text-rose-500' : 'text-neutral-400'
+                  }`}>
+                    {line.type === 'add' ? '+' : line.type === 'remove' ? '-' : ' '}
+                  </span>
+                  {/* Content */}
+                  {hLine ? (
+                    <span 
+                      className="whitespace-pre-wrap break-all pr-3 shiki-line-content" 
+                      dangerouslySetInnerHTML={{ __html: hLine }} 
+                    />
+                  ) : (
+                    <span className="whitespace-pre-wrap break-all pr-3">{line.content}</span>
+                  )}
+                </div>
+              )
+            })
+          }
         </div>
       ))}
+      <style>{`
+        .shiki-line-content pre {
+          display: inline !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          background: transparent !important;
+          font-family: inherit !important;
+          font-size: inherit !important;
+        }
+        .shiki-line-content .line {
+          display: inline !important;
+        }
+      `}</style>
     </div>
   )
 }

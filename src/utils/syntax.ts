@@ -10,6 +10,8 @@ export function getLanguage(mimeType: string, path: string): string {
   if (ext === 'py') return 'python'
   if (ext === 'rs') return 'rust'
   if (ext === 'go') return 'go'
+  if (ext === 'cs') return 'csharp'
+  if (ext === 'java') return 'java'
   
   if (mimeType.includes('typescript')) return 'typescript'
   if (mimeType.includes('javascript')) return 'javascript'

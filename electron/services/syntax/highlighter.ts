@@ -9,7 +9,7 @@ export async function initHighlighter() {
     langs: [
       'typescript', 'javascript', 'tsx', 'jsx', 'json', 
       'markdown', 'css', 'html', 'bash', 'python', 
-      'rust', 'go', 'cpp', 'c', 'java', 'text'
+      'rust', 'go', 'cpp', 'c', 'java', 'csharp', 'text'
     ]
   })
   return highlighter
@@ -21,7 +21,7 @@ export async function highlightCode(code: string, lang: string, theme: 'light' |
   
   // Map some common names to Shiki names if needed
   let shikiLang = lang.toLowerCase()
-  if (shikiLang === 'clike') shikiLang = 'cpp' 
+  if (shikiLang === 'clike' || shikiLang === 'cs') shikiLang = 'csharp' 
   
   try {
     return h.codeToHtml(code, {
@@ -35,4 +35,11 @@ export async function highlightCode(code: string, lang: string, theme: 'light' |
       theme: shikiTheme
     })
   }
+}
+
+export async function highlightLines(lines: string[], lang: string, theme: 'light' | 'dark'): Promise<string[]> {
+  // To avoid hundreds of separate highlight calls, we highlight the entire block 
+  // but use Shiki's internal tokenization if possible, or just individual calls 
+  // if they are fast enough. For now, individual calls but in a single promise all.
+  return Promise.all(lines.map(line => highlightCode(line, lang, theme)))
 }

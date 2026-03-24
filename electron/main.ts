@@ -2,7 +2,7 @@ import { app, BrowserWindow, dialog, ipcMain, Menu, shell } from 'electron'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import fs from 'node:fs'
-import { highlightCode, initHighlighter } from './services/syntax/highlighter'
+import { highlightCode, highlightLines, initHighlighter } from './services/syntax/highlighter'
 import { getLog } from './services/git/gitLog'
 import { getAllRefs } from './services/git/gitRefs'
 import { getCommitDetail, getFileTree, getFileContent } from './services/git/gitShow'
@@ -65,6 +65,7 @@ interface AppSettings {
   verboseLogging?: boolean
   showStashes?: boolean
   mergeConflictSyntaxHighlighting?: boolean
+  diffSyntaxHighlighting?: boolean
 }
 
 const getWindowStatePath = () => path.join(app.getPath('userData'), 'window-state.json')
@@ -137,7 +138,8 @@ function loadSettings(): AppSettings {
     commitSortOrder: 'topo',
     verboseLogging: false,
     showStashes: false,
-    mergeConflictSyntaxHighlighting: true
+    mergeConflictSyntaxHighlighting: true,
+    diffSyntaxHighlighting: true
   }
 
   try {
@@ -497,8 +499,21 @@ app.whenReady().then(() => {
     saveSettings(currentSettings)
   })
 
+  ipcMain.handle('system:getDiffSyntaxHighlighting', () => {
+    return !!currentSettings.diffSyntaxHighlighting
+  })
+
+  ipcMain.on('system:setDiffSyntaxHighlighting', (_event, enabled: boolean) => {
+    currentSettings.diffSyntaxHighlighting = enabled
+    saveSettings(currentSettings)
+  })
+
   ipcMain.handle('system:highlightCode', (_event, code: string, lang: string, theme: string) => {
     return highlightCode(code, lang, theme as 'light' | 'dark')
+  })
+
+  ipcMain.handle('system:highlightLines', (_event, lines: string[], lang: string, theme: string) => {
+    return highlightLines(lines, lang, theme as 'light' | 'dark')
   })
 
   ipcMain.on('system:quit', () => {
