@@ -11,7 +11,9 @@
     "build": "tsc && vite build && electron-builder",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
-    "test": "mocha tests/**/*.test.cjs --timeout 60000"
+    "test": "npm run test:unit && npm run test:e2e",
+    "test:e2e": "mocha tests/**/*.test.cjs --timeout 60000",
+    "test:unit": "vitest run"
   },
   "dependencies": {
     "react": "^18.2.0",
@@ -20,24 +22,29 @@
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.2.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@types/react": "^18.2.64",
     "@types/react-dom": "^18.2.21",
     "@typescript-eslint/eslint-plugin": "^7.1.1",
     "@typescript-eslint/parser": "^7.1.1",
     "@vitejs/plugin-react": "^4.2.1",
+    "@vitest/ui": "^4.1.1",
     "chromedriver": "^124.0.4",
     "electron": "^30.0.1",
     "electron-builder": "^24.13.3",
     "eslint": "^8.57.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.5",
+    "jsdom": "^29.0.1",
     "mocha": "^11.7.5",
     "selenium-webdriver": "^4.41.0",
     "tailwindcss": "^4.2.1",
     "typescript": "^5.2.2",
     "vite": "^5.1.6",
     "vite-plugin-electron": "^0.28.6",
-    "vite-plugin-electron-renderer": "^0.14.5"
+    "vite-plugin-electron-renderer": "^0.14.5",
+    "vitest": "^4.1.1"
   },
   "main": "dist-electron/main.js"
 }

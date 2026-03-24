@@ -1,0 +1,1274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Component Visual Test Harness</title>
+<style>
+  :root {
+    --color-graph-0: #e0a050;
+    --color-graph-1: #50b0e0;
+    --color-graph-2: #e06080;
+    --color-graph-3: #80d070;
+    --color-graph-4: #c080e0;
+    --color-graph-5: #e0d050;
+    --color-bg-panel: #1e1e2e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    background: #181825;
+    color: #cdd6f4;
+    padding: 24px 32px;
+    font-size: 13px;
+  }
+  h1 { font-size: 22px; margin-bottom: 8px; color: #f5e0dc; }
+  h2 { font-size: 16px; margin-top: 28px; margin-bottom: 12px; color: #cba6f7; border-bottom: 1px solid #313244; padding-bottom: 6px; }
+  h3 { font-size: 13px; margin-bottom: 6px; color: #a6adc8; }
+  .subtitle { font-size: 12px; color: #6c7086; margin-bottom: 20px; }
+  .scenario { margin-bottom: 24px; }
+  .scenario p { font-size: 11px; color: #6c7086; margin-bottom: 8px; }
+
+  /* ─── CommitGraph ─── */
+  .rows {
+    background: var(--color-bg-panel);
+    border-radius: 6px;
+    padding: 4px 0;
+    display: inline-block;
+  }
+  .row {
+    display: flex;
+    align-items: center;
+    height: 28px;
+  }
+  .row .label {
+    font-size: 11px;
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    color: #bac2de;
+    padding-left: 6px;
+    white-space: nowrap;
+  }
+  .legend {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+  }
+  .legend-swatch {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+  }
+
+  /* ─── ActionToolbar ─── */
+  .mock-toolbar {
+    display: flex;
+    align-items: center;
+    height: 42px;
+    border-bottom: 1px solid #313244;
+    background: #1e1e2e;
+    padding: 0 10px;
+    border-radius: 6px;
+    position: relative;
+  }
+  .mock-toolbar .btn-group {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+  .mock-toolbar .separator {
+    width: 1px;
+    height: 24px;
+    background: #313244;
+    margin: 0 6px;
+  }
+  .mock-toolbar .tb-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 4px 8px;
+    border-radius: 3px;
+    color: #a6adc8;
+    cursor: pointer;
+    border: none;
+    background: none;
+    font-size: 10px;
+    transition: background 0.15s;
+  }
+  .mock-toolbar .tb-btn:hover { background: #313244; color: #cdd6f4; }
+  .mock-toolbar .tb-btn.disabled { opacity: 0.3; cursor: not-allowed; }
+  .mock-toolbar .tb-btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+  .mock-toolbar .center-pill {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid #313244;
+    background: #181825;
+    padding: 4px 12px;
+    border-radius: 3px;
+    font-size: 11px;
+  }
+  .mock-toolbar .center-pill .repo { font-weight: 600; color: #cdd6f4; }
+  .mock-toolbar .center-pill .divider { color: #45475a; }
+  .mock-toolbar .center-pill .branch { color: #a6adc8; }
+  .mock-toolbar .right-area {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .error-badge {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(235, 80, 80, 0.15);
+    color: #f38ba8;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+  }
+  .spinner {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    color: #6c7086;
+  }
+  .spinner svg { animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ─── LeftSidebar ─── */
+  .mock-sidebar {
+    width: 220px;
+    background: #1e1e2e;
+    border: 1px solid #313244;
+    border-radius: 6px;
+    overflow: hidden;
+    font-size: 12px;
+  }
+  .sidebar-view-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    width: 100%;
+    border: none;
+    background: none;
+    color: #a6adc8;
+    cursor: pointer;
+    font-size: 12px;
+    text-align: left;
+  }
+  .sidebar-view-btn.active { background: #313244; color: #cdd6f4; font-weight: 600; }
+  .sidebar-view-btn .badge { font-size: 10px; color: #6c7086; }
+  .sidebar-section-header {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #a6adc8;
+    cursor: pointer;
+    background: none;
+    border: none;
+    width: 100%;
+    text-align: left;
+  }
+  .sidebar-section-header:hover { color: #cdd6f4; }
+  .sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 10px 2px 20px;
+    font-size: 11px;
+    color: #a6adc8;
+    cursor: pointer;
+  }
+  .sidebar-item:hover { background: #313244; }
+  .sidebar-item.active { color: #cdd6f4; font-weight: 600; }
+  .sidebar-item .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--color-graph-0);
+    flex-shrink: 0;
+  }
+  .sidebar-item .ahead-behind {
+    margin-left: auto;
+    font-size: 9px;
+    color: #6c7086;
+  }
+  .sidebar-empty { padding: 4px 20px; font-size: 10px; color: #585b70; font-style: italic; }
+  .sidebar-separator { border-bottom: 1px solid #313244; margin: 2px 0; }
+
+  /* ─── DetailsPane ─── */
+  .mock-details {
+    background: #1e1e2e;
+    border: 1px solid #313244;
+    border-radius: 6px;
+    overflow: hidden;
+    max-width: 560px;
+  }
+  .details-tabs {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    height: 28px;
+    padding: 0 12px;
+    border-bottom: 1px solid #313244;
+  }
+  .details-tab {
+    font-size: 11px;
+    font-weight: 500;
+    padding-bottom: 4px;
+    cursor: pointer;
+    background: none;
+    border: none;
+    color: #6c7086;
+    position: relative;
+  }
+  .details-tab.active { color: #c9a0dc; }
+  .details-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: #c9a0dc;
+  }
+  .details-content { padding: 12px; }
+  .person-block {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+  .avatar.primary { background: #e0a050; color: #1e1e2e; }
+  .avatar.secondary { background: #80d070; color: #1e1e2e; }
+  .avatar.md { width: 32px; height: 32px; font-size: 12px; }
+  .avatar.sm { width: 24px; height: 24px; font-size: 10px; }
+  .person-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #6c7086; }
+  .person-name { font-size: 12px; font-weight: 500; color: #cdd6f4; }
+  .person-email { font-size: 11px; color: #6c7086; }
+  .person-date { font-size: 11px; color: #6c7086; }
+  .meta-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 2px 0;
+  }
+  .meta-label { width: 56px; text-align: right; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #6c7086; flex-shrink: 0; }
+  .meta-value { font-size: 11px; }
+  .sha { font-family: 'Cascadia Code', 'Fira Code', monospace; color: #89b4fa; }
+  .ref-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 500;
+  }
+  .ref-chip.local { background: rgba(224,160,80,0.15); color: #e0a050; }
+  .ref-chip.tag { background: rgba(128,208,112,0.15); color: #80d070; }
+  .ref-chip.remote { background: rgba(80,176,224,0.15); color: #50b0e0; }
+  .commit-subject { font-size: 12px; font-weight: 600; color: #cdd6f4; }
+  .commit-body { font-size: 12px; color: #a6adc8; line-height: 1.5; margin-top: 4px; }
+  .file-list { margin-top: 8px; }
+  .file-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 0 2px 16px;
+    font-size: 11px;
+    color: #a6adc8;
+    cursor: pointer;
+  }
+  .file-item:hover { background: #313244; }
+  .file-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    border-radius: 2px;
+    font-size: 9px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .file-badge.M { background: rgba(224,160,80,0.2); color: #e0a050; }
+  .file-badge.A { background: rgba(128,208,112,0.2); color: #80d070; }
+  .file-badge.D { background: rgba(235,80,80,0.2); color: #f38ba8; }
+  .empty-state { padding: 32px; text-align: center; font-size: 12px; color: #585b70; }
+
+  /* ─── BranchChip ─── */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    border-radius: 2px;
+    padding: 2px 6px;
+    font-size: 11px;
+    font-weight: 500;
+    max-width: 192px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .chip.local { background: rgba(224,160,80,0.15); color: #e0a050; }
+  .chip.remote { border: 1px solid #50b0e0; color: #50b0e0; background: transparent; }
+  .chip.tag { background: rgba(128,80,224,0.15); color: #c080e0; }
+  .chip.stash { background: rgba(224,160,80,0.15); color: #e0a050; }
+  .chip.custom-local { color: #fff; }
+  .chip.custom-remote { background: transparent; }
+  .chip-icon {
+    display: flex;
+    align-items: center;
+    font-size: 9px;
+  }
+  .chip-icon svg { width: 10px; height: 10px; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* ─── FileStatusBadge ─── */
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 2px;
+    font-size: 9px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .status-badge.modified  { background: #e0a050; color: #1e1e2e; }
+  .status-badge.added     { background: #80d070; color: #1e1e2e; }
+  .status-badge.deleted   { background: #f38ba8; color: #1e1e2e; }
+  .status-badge.renamed   { background: #89b4fa; color: #1e1e2e; }
+  .status-badge.untracked { background: #6cc070; color: #1e1e2e; }
+  .status-badge.copied    { background: #c080e0; color: #1e1e2e; }
+  .status-badge.conflict  { background: #f38ba8; color: #1e1e2e; }
+  .status-badge.ignored   { opacity: 0.5; filter: grayscale(100%); }
+
+  /* ─── DiffViewer ─── */
+  .diff-viewer {
+    background: #1e1e2e;
+    border: 1px solid #313244;
+    border-radius: 6px;
+    overflow: hidden;
+    max-width: 680px;
+    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    font-size: 12px;
+    line-height: 20px;
+  }
+  .diff-empty {
+    padding: 32px;
+    text-align: center;
+    color: #585b70;
+    font-family: system-ui;
+    font-size: 12px;
+  }
+  .diff-hunk-header {
+    padding: 2px 12px;
+    font-size: 11px;
+    color: #6c7086;
+    background: #181825;
+    border-top: 1px solid #313244;
+    border-bottom: 1px solid #313244;
+  }
+  .diff-line { display: flex; }
+  .diff-line.add { background: rgba(80,200,120,0.08); }
+  .diff-line.remove { background: rgba(240,80,80,0.08); }
+  .diff-lno {
+    display: inline-block;
+    width: 40px;
+    flex-shrink: 0;
+    text-align: right;
+    padding-right: 4px;
+    color: #45475a;
+    user-select: none;
+  }
+  .diff-indicator {
+    display: inline-block;
+    width: 16px;
+    flex-shrink: 0;
+    text-align: center;
+    user-select: none;
+  }
+  .diff-indicator.add { color: #80d070; }
+  .diff-indicator.remove { color: #f38ba8; }
+  .diff-indicator.ctx { color: #45475a; }
+  .diff-content { white-space: pre-wrap; word-break: break-all; padding-right: 12px; }
+  .binary-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 32px;
+    text-align: center;
+    color: #585b70;
+    font-family: system-ui;
+    font-size: 12px;
+  }
+  .binary-block .title { font-weight: 600; color: #a6adc8; font-size: 13px; }
+  .binary-block .meta { font-size: 11px; }
+
+  /* ─── Layout helpers ─── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .border-t { border-top: 1px solid #313244; padding-top: 8px; margin-top: 8px; }
+  .flex-row { display: flex; gap: 4px; flex-wrap: wrap; }
+  .demo-row { display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; }
+  .demo-label { font-size: 10px; color: #585b70; margin-bottom: 4px; }
+  .card {
+    background: #1e1e2e;
+    border: 1px solid #313244;
+    border-radius: 6px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  .gap-8 { gap: 8px; }
+  .gap-16 { gap: 16px; }
+  .mb-4 { margin-bottom: 4px; }
+
+  /* ─── TOC ─── */
+  .toc { margin-bottom: 24px; }
+  .toc a { color: #89b4fa; text-decoration: none; font-size: 12px; margin-right: 16px; }
+  .toc a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<h1>Component Visual Test Harness</h1>
+<p class="subtitle">Static renders of all tested components in various states. Open in any browser — no build step needed.</p>
+
+<nav class="toc">
+  <a href="#commit-graph">CommitGraph</a>
+  <a href="#action-toolbar">ActionToolbar</a>
+  <a href="#left-sidebar">LeftSidebar</a>
+  <a href="#details-pane">DetailsPane</a>
+  <a href="#avatar">Avatar</a>
+  <a href="#branch-chip">BranchChip</a>
+  <a href="#file-status-badge">FileStatusBadge</a>
+  <a href="#diff-viewer">DiffViewer</a>
+</nav>
+
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
+<h2 id="commit-graph">CommitGraph</h2>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-swatch" style="background:var(--color-graph-0)"></div>Lane 0</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:var(--color-graph-1)"></div>Lane 1</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:var(--color-graph-2)"></div>Lane 2</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:var(--color-graph-3)"></div>Lane 3</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:var(--color-graph-4)"></div>Lane 4</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:var(--color-graph-5)"></div>Lane 5</div>
+</div>
+
+<div id="commit-graph-app"></div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
+<h2 id="action-toolbar">ActionToolbar</h2>
+
+<div class="scenario">
+  <h3>Default state (repo open, on main)</h3>
+  <div class="mock-toolbar">
+    <div class="btn-group">
+      <button class="tb-btn"><svg viewBox="0 0 24 24"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>Open</button>
+      <button class="tb-btn"><svg viewBox="0 0 24 24"><path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>Clone</button>
+    </div>
+    <div class="separator"></div>
+    <div class="btn-group">
+      <button class="tb-btn"><svg viewBox="0 0 24 24"><path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3"/></svg>Fetch</button>
+      <button class="tb-btn"><svg viewBox="0 0 24 24"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 19h16"/></svg>Pull</button>
+      <button class="tb-btn"><svg viewBox="0 0 24 24"><path d="M12 19V7m0 0l4 4m-4-4l-4 4M4 5h16"/></svg>Push</button>
+      <button class="tb-btn"><svg viewBox="0 0 24 24"><path d="M5 8h14M5 8a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v1a2 2 0 01-2 2M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>Stash</button>
+    </div>
+    <div class="separator"></div>
+    <div class="btn-group">
+      <button class="tb-btn"><svg viewBox="0 0 24 24"><path d="M6 3v12M18 9a3 3 0 01-3 3h-6M6 21a3 3 0 100-6 3 3 0 000 6zM18 9a3 3 0 100-6 3 3 0 000 6z"/></svg>Branch</button>
+      <button class="tb-btn disabled"><svg viewBox="0 0 24 24"><path d="M6 9v8a3 3 0 003 3h3M18 9v12M18 9l-3 3m3-3l3 3M6 9a3 3 0 100-6 3 3 0 000 6z"/></svg>Pull Request</button>
+    </div>
+    <div class="center-pill">
+      <span class="repo">my-repo</span>
+      <span class="divider">|</span>
+      <span class="branch">&#x23CE; main</span>
+    </div>
+  </div>
+</div>
+
+<div class="scenario">
+  <h3>With errors and activity spinner</h3>
+  <div class="mock-toolbar">
+    <div class="btn-group">
+      <button class="tb-btn">Open</button>
+      <button class="tb-btn">Clone</button>
+    </div>
+    <div class="separator"></div>
+    <div class="btn-group">
+      <button class="tb-btn">Fetch</button>
+      <button class="tb-btn">Pull</button>
+      <button class="tb-btn">Push</button>
+      <button class="tb-btn">Stash</button>
+    </div>
+    <div class="separator"></div>
+    <div class="btn-group">
+      <button class="tb-btn">Branch</button>
+      <button class="tb-btn">Pull Request</button>
+    </div>
+    <div class="center-pill">
+      <span class="repo">my-repo</span>
+      <span class="divider">|</span>
+      <span class="branch">&#x23CE; feature/wip</span>
+    </div>
+    <div class="right-area">
+      <div class="error-badge">&#9888; Errors (2)</div>
+      <div class="spinner">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="#cba6f7" stroke-width="2" stroke-linecap="round" stroke-dasharray="32" stroke-dashoffset="10"/></svg>
+        Working&hellip;
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="scenario">
+  <h3>PR button enabled (GitHub remote detected)</h3>
+  <div class="mock-toolbar">
+    <div class="btn-group">
+      <button class="tb-btn">Open</button>
+      <button class="tb-btn">Clone</button>
+    </div>
+    <div class="separator"></div>
+    <div class="btn-group">
+      <button class="tb-btn">Fetch</button>
+      <button class="tb-btn">Pull</button>
+      <button class="tb-btn">Push</button>
+      <button class="tb-btn">Stash</button>
+    </div>
+    <div class="separator"></div>
+    <div class="btn-group">
+      <button class="tb-btn">Branch</button>
+      <button class="tb-btn"><svg viewBox="0 0 24 24"><path d="M6 9v8a3 3 0 003 3h3M18 9v12M18 9l-3 3m3-3l3 3M6 9a3 3 0 100-6 3 3 0 000 6z"/></svg>Pull Request</button>
+    </div>
+    <div class="center-pill">
+      <span class="repo">reforge</span>
+      <span class="divider">|</span>
+      <span class="branch">&#x23CE; develop</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
+<h2 id="left-sidebar">LeftSidebar</h2>
+
+<div class="demo-row">
+  <div class="scenario">
+    <h3>With branches, remotes, tags, stashes</h3>
+    <div class="mock-sidebar">
+      <div class="sidebar-separator"></div>
+      <button class="sidebar-view-btn">Local Changes <span class="badge">(3)</span></button>
+      <button class="sidebar-view-btn active">History</button>
+      <div class="sidebar-separator"></div>
+      <button class="sidebar-section-header">&#x25BE; Branches</button>
+      <div class="sidebar-item active"><span class="dot"></span> main <span class="ahead-behind">&uarr;1 &darr;0</span></div>
+      <div class="sidebar-item"><span class="dot" style="background:var(--color-graph-1)"></span> develop</div>
+      <div class="sidebar-item"><span class="dot" style="background:var(--color-graph-2)"></span> feature/auth</div>
+      <div class="sidebar-item"><span class="dot" style="background:var(--color-graph-3)"></span> fix/typo</div>
+      <button class="sidebar-section-header">&#x25BE; Remotes</button>
+      <div class="sidebar-item" style="padding-left:20px; color:#6c7086;">&#x1F4C1; origin</div>
+      <div class="sidebar-item" style="padding-left:32px;">main</div>
+      <div class="sidebar-item" style="padding-left:32px;">develop</div>
+      <button class="sidebar-section-header">&#x25B8; Tags</button>
+      <button class="sidebar-section-header">&#x25BE; Stashes</button>
+      <div class="sidebar-item">stash@{0}: WIP on feature</div>
+      <div class="sidebar-item">stash@{1}: Quick save</div>
+      <button class="sidebar-section-header">&#x25B8; Submodules</button>
+    </div>
+  </div>
+
+  <div class="scenario">
+    <h3>Empty / loading</h3>
+    <div class="mock-sidebar">
+      <div class="sidebar-separator"></div>
+      <button class="sidebar-view-btn">Local Changes</button>
+      <button class="sidebar-view-btn active">History</button>
+      <div class="sidebar-separator"></div>
+      <button class="sidebar-section-header">&#x25BE; Branches</button>
+      <div style="padding: 4px 20px;">
+        <div style="height:12px; width:80%; background:#313244; border-radius:3px; margin:4px 0;"></div>
+        <div style="height:12px; width:60%; background:#313244; border-radius:3px; margin:4px 0;"></div>
+        <div style="height:12px; width:70%; background:#313244; border-radius:3px; margin:4px 0;"></div>
+      </div>
+      <button class="sidebar-section-header">&#x25BE; Remotes</button>
+      <div class="sidebar-empty">No remotes</div>
+      <button class="sidebar-section-header">&#x25B8; Tags</button>
+      <button class="sidebar-section-header">&#x25BE; Stashes</button>
+      <div class="sidebar-empty">No stashes</div>
+      <button class="sidebar-section-header">&#x25B8; Submodules</button>
+    </div>
+  </div>
+
+  <div class="scenario">
+    <h3>Local Changes active</h3>
+    <div class="mock-sidebar">
+      <div class="sidebar-separator"></div>
+      <button class="sidebar-view-btn active">Local Changes <span class="badge">(7)</span></button>
+      <button class="sidebar-view-btn">History</button>
+      <div class="sidebar-separator"></div>
+      <button class="sidebar-section-header">&#x25BE; Branches</button>
+      <div class="sidebar-item active"><span class="dot"></span> main</div>
+      <div class="sidebar-item"><span class="dot" style="background:var(--color-graph-1)"></span> develop</div>
+      <button class="sidebar-section-header">&#x25BE; Remotes</button>
+      <div class="sidebar-empty">No remotes</div>
+      <button class="sidebar-section-header">&#x25B8; Tags</button>
+      <button class="sidebar-section-header">&#x25BE; Stashes</button>
+      <div class="sidebar-empty">No stashes</div>
+      <button class="sidebar-section-header">&#x25B8; Submodules</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
+<h2 id="details-pane">DetailsPane</h2>
+
+<div class="demo-row">
+  <div class="scenario">
+    <h3>Commit detail tab</h3>
+    <div class="mock-details">
+      <div class="details-tabs">
+        <button class="details-tab active">Commit</button>
+        <button class="details-tab">Changes</button>
+        <button class="details-tab">File Tree</button>
+      </div>
+      <div class="details-content">
+        <div class="grid-2">
+          <div class="person-block">
+            <div class="avatar primary">AL</div>
+            <div>
+              <div class="person-label">Author</div>
+              <div class="person-name">Alice <span class="person-email">&lt;alice@example.com&gt;</span></div>
+              <div class="person-date">2025-06-15 10:30</div>
+            </div>
+          </div>
+          <div class="person-block">
+            <div class="avatar primary">BO</div>
+            <div>
+              <div class="person-label">Committer</div>
+              <div class="person-name">Bob <span class="person-email">&lt;bob@example.com&gt;</span></div>
+              <div class="person-date">2025-06-15 11:00</div>
+            </div>
+          </div>
+        </div>
+        <div class="border-t">
+          <div class="meta-row">
+            <span class="meta-label">Refs</span>
+            <div class="flex-row">
+              <span class="ref-chip local">&#x23CE; main</span>
+              <span class="ref-chip remote">origin/main</span>
+              <span class="ref-chip tag">&#x1F3F7; v1.0.0</span>
+            </div>
+          </div>
+          <div class="meta-row">
+            <span class="meta-label">SHA</span>
+            <span class="meta-value sha">abc123def456abc123def456abc123def456abc1</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-label">Parents</span>
+            <div class="flex-row">
+              <span class="sha" style="font-size:11px;">def456a</span>
+              <span class="sha" style="font-size:11px;">fed789b</span>
+            </div>
+          </div>
+        </div>
+        <div class="border-t">
+          <div class="commit-subject">Fix authentication token refresh logic</div>
+          <div class="commit-body">
+            The previous implementation did not handle expired tokens correctly,
+            leading to 401 errors after long idle periods. This patch adds a
+            proactive refresh 5 minutes before expiry.
+          </div>
+        </div>
+        <div class="border-t">
+          <div style="font-size:11px; font-weight:600; color:#a6adc8; margin-bottom:4px;">
+            &#x25BE; Changed files <span style="font-weight:normal; color:#6c7086;">(4)</span>
+          </div>
+          <div class="file-list">
+            <div class="file-item"><span class="file-badge M">M</span> src/auth/tokenManager.ts</div>
+            <div class="file-item"><span class="file-badge M">M</span> src/auth/tokenManager.test.ts</div>
+            <div class="file-item"><span class="file-badge A">A</span> src/auth/refreshScheduler.ts</div>
+            <div class="file-item"><span class="file-badge D">D</span> src/auth/legacyAuth.ts</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="scenario">
+    <h3>No commit selected</h3>
+    <div class="mock-details">
+      <div class="details-tabs">
+        <button class="details-tab active">Commit</button>
+        <button class="details-tab">Changes</button>
+        <button class="details-tab">File Tree</button>
+      </div>
+      <div class="empty-state">Select a commit to view details</div>
+    </div>
+  </div>
+</div>
+
+<div class="demo-row" style="margin-top: 16px;">
+  <div class="scenario">
+    <h3>Root commit (no parents)</h3>
+    <div class="mock-details">
+      <div class="details-tabs">
+        <button class="details-tab active">Commit</button>
+        <button class="details-tab">Changes</button>
+        <button class="details-tab">File Tree</button>
+      </div>
+      <div class="details-content">
+        <div class="person-block">
+          <div class="avatar primary">JD</div>
+          <div>
+            <div class="person-label">Author</div>
+            <div class="person-name">Jane Doe <span class="person-email">&lt;jane@dev.io&gt;</span></div>
+            <div class="person-date">2024-01-01 00:00</div>
+          </div>
+        </div>
+        <div class="border-t">
+          <div class="meta-row">
+            <span class="meta-label">SHA</span>
+            <span class="meta-value sha">000000000000000000000000000000000000init</span>
+          </div>
+        </div>
+        <div class="border-t">
+          <div class="commit-subject">Initial commit</div>
+        </div>
+        <div class="border-t">
+          <div style="font-size:11px; font-weight:600; color:#a6adc8;">
+            &#x25BE; Changed files <span style="font-weight:normal; color:#6c7086;">(1)</span>
+          </div>
+          <div class="file-list">
+            <div class="file-item"><span class="file-badge A">A</span> README.md</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="scenario">
+    <h3>Merge commit (2 parents, many refs)</h3>
+    <div class="mock-details">
+      <div class="details-tabs">
+        <button class="details-tab active">Commit</button>
+        <button class="details-tab">Changes</button>
+        <button class="details-tab">File Tree</button>
+      </div>
+      <div class="details-content">
+        <div class="person-block">
+          <div class="avatar primary">GH</div>
+          <div>
+            <div class="person-label">Author</div>
+            <div class="person-name">GitHub <span class="person-email">&lt;noreply@github.com&gt;</span></div>
+            <div class="person-date">2025-03-20 14:22</div>
+          </div>
+        </div>
+        <div class="border-t">
+          <div class="meta-row">
+            <span class="meta-label">Refs</span>
+            <div class="flex-row">
+              <span class="ref-chip local">&#x23CE; main</span>
+              <span class="ref-chip local">&#x23CE; develop</span>
+              <span class="ref-chip remote">origin/main</span>
+              <span class="ref-chip tag">&#x1F3F7; v2.0.0</span>
+            </div>
+          </div>
+          <div class="meta-row">
+            <span class="meta-label">SHA</span>
+            <span class="meta-value sha">merge123456789abcdef0123456789abcdef01</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-label">Parents</span>
+            <div class="flex-row">
+              <span class="sha" style="font-size:11px;">abc1234</span>
+              <span class="sha" style="font-size:11px;">def5678</span>
+            </div>
+          </div>
+        </div>
+        <div class="border-t">
+          <div class="commit-subject">Merge pull request #42 from feature/auth</div>
+          <div class="commit-body">Add JWT token refresh and session management</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
+<h2 id="avatar">Avatar</h2>
+
+<div class="card">
+  <h3>Sizes &amp; variants</h3>
+  <div class="demo-row gap-16" style="margin-top:8px;">
+    <div>
+      <div class="demo-label">primary / md (default)</div>
+      <span class="avatar primary md">AB</span>
+    </div>
+    <div>
+      <div class="demo-label">primary / sm</div>
+      <span class="avatar primary sm">CD</span>
+    </div>
+    <div>
+      <div class="demo-label">secondary / md</div>
+      <span class="avatar secondary md">EF</span>
+    </div>
+    <div>
+      <div class="demo-label">secondary / sm</div>
+      <span class="avatar secondary sm">GH</span>
+    </div>
+    <div>
+      <div class="demo-label">single letter</div>
+      <span class="avatar primary md">X</span>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h3>In context (commit detail row)</h3>
+  <div class="demo-row gap-8" style="margin-top:8px; align-items:flex-start;">
+    <span class="avatar primary md">AL</span>
+    <div style="font-size:12px;">
+      <div style="font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:#6c7086;">Author</div>
+      <div style="font-weight:500;">Alice <span style="color:#6c7086;">&lt;alice@dev.io&gt;</span></div>
+      <div style="color:#6c7086; font-size:11px;">2025-06-15 10:30</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
+<h2 id="branch-chip">BranchChip</h2>
+
+<div class="card">
+  <h3>All types (default colors)</h3>
+  <div class="demo-row gap-8" style="margin-top:8px;">
+    <span class="chip local">&#x23CE; main</span>
+    <span class="chip local">&#x23CE; develop</span>
+    <span class="chip remote"><span class="chip-icon">&#x2601;</span> origin/main</span>
+    <span class="chip remote"><span class="chip-icon">&#x2601;</span> origin/develop</span>
+    <span class="chip tag">
+      <span class="chip-icon"><svg viewBox="0 0 24 24"><path d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg></span>
+      v1.0.0
+    </span>
+    <span class="chip tag">
+      <span class="chip-icon"><svg viewBox="0 0 24 24"><path d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg></span>
+      v2.3.1-beta
+    </span>
+    <span class="chip stash">
+      <span class="chip-icon"><svg viewBox="0 0 24 24"><path d="M5 8h14M5 8a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v1a2 2 0 01-2 2M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg></span>
+      stash@{0}
+    </span>
+  </div>
+</div>
+
+<div class="card">
+  <h3>Custom graph colors</h3>
+  <div class="demo-row gap-8" style="margin-top:8px;">
+    <span class="chip custom-local" style="background:#e06080;">main</span>
+    <span class="chip custom-local" style="background:#50b0e0;">feature/auth</span>
+    <span class="chip custom-local" style="background:#80d070;">fix/typo</span>
+    <span class="chip custom-local" style="background:#c080e0;">release/2.0</span>
+    <span class="chip custom-remote" style="border:1px solid #e06080; color:#e06080;"><span class="chip-icon">&#x2601;</span> origin/main</span>
+    <span class="chip custom-remote" style="border:1px solid #50b0e0; color:#50b0e0;"><span class="chip-icon">&#x2601;</span> origin/feature</span>
+  </div>
+</div>
+
+<div class="card">
+  <h3>Long name truncation</h3>
+  <div style="margin-top:8px;">
+    <span class="chip local" style="display:inline-block; max-width:192px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+      &#x23CE; feature/very-long-branch-name-that-should-be-truncated-in-the-ui-to-prevent-overflow
+    </span>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
+<h2 id="file-status-badge">FileStatusBadge</h2>
+
+<div class="card">
+  <h3>All statuses</h3>
+  <div class="demo-row gap-16" style="margin-top:8px;">
+    <div style="text-align:center;">
+      <div class="demo-label mb-4">Modified</div>
+      <span class="status-badge modified">M</span>
+    </div>
+    <div style="text-align:center;">
+      <div class="demo-label mb-4">Added</div>
+      <span class="status-badge added">A</span>
+    </div>
+    <div style="text-align:center;">
+      <div class="demo-label mb-4">Deleted</div>
+      <span class="status-badge deleted">D</span>
+    </div>
+    <div style="text-align:center;">
+      <div class="demo-label mb-4">Renamed</div>
+      <span class="status-badge renamed">R</span>
+    </div>
+    <div style="text-align:center;">
+      <div class="demo-label mb-4">Untracked</div>
+      <span class="status-badge untracked">U</span>
+    </div>
+    <div style="text-align:center;">
+      <div class="demo-label mb-4">Copied</div>
+      <span class="status-badge copied">C</span>
+    </div>
+    <div style="text-align:center;">
+      <div class="demo-label mb-4">Conflict</div>
+      <span class="status-badge conflict">!</span>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h3>Ignored state</h3>
+  <div class="demo-row gap-16" style="margin-top:8px;">
+    <div style="text-align:center;">
+      <div class="demo-label mb-4">Normal</div>
+      <span class="status-badge modified">M</span>
+    </div>
+    <div style="text-align:center;">
+      <div class="demo-label mb-4">Ignored</div>
+      <span class="status-badge modified ignored" title="This file is matched by .gitignore">M</span>
+    </div>
+    <div style="text-align:center;">
+      <div class="demo-label mb-4">Normal</div>
+      <span class="status-badge added">A</span>
+    </div>
+    <div style="text-align:center;">
+      <div class="demo-label mb-4">Ignored</div>
+      <span class="status-badge added ignored" title="This file is matched by .gitignore">A</span>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h3>In context (file list)</h3>
+  <div style="margin-top:8px; font-size:12px;">
+    <div style="display:flex; align-items:center; gap:8px; padding:3px 0;">
+      <span class="status-badge modified">M</span> src/auth/tokenManager.ts
+    </div>
+    <div style="display:flex; align-items:center; gap:8px; padding:3px 0;">
+      <span class="status-badge modified">M</span> src/auth/tokenManager.test.ts
+    </div>
+    <div style="display:flex; align-items:center; gap:8px; padding:3px 0;">
+      <span class="status-badge added">A</span> src/auth/refreshScheduler.ts
+    </div>
+    <div style="display:flex; align-items:center; gap:8px; padding:3px 0;">
+      <span class="status-badge deleted">D</span> src/auth/legacyAuth.ts
+    </div>
+    <div style="display:flex; align-items:center; gap:8px; padding:3px 0;">
+      <span class="status-badge renamed">R</span> src/utils/helpers.ts &rarr; src/utils/index.ts
+    </div>
+    <div style="display:flex; align-items:center; gap:8px; padding:3px 0;">
+      <span class="status-badge conflict">!</span> <span style="color:#f38ba8;">package.json</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
+<h2 id="diff-viewer">DiffViewer</h2>
+
+<div class="scenario">
+  <h3>Standard diff with add/remove/context lines</h3>
+  <div class="diff-viewer">
+    <div class="diff-hunk-header">@@ -1,7 +1,8 @@</div>
+    <div class="diff-line">
+      <span class="diff-lno">1</span><span class="diff-lno">1</span>
+      <span class="diff-indicator ctx">&nbsp;</span>
+      <span class="diff-content">import React from 'react'</span>
+    </div>
+    <div class="diff-line">
+      <span class="diff-lno">2</span><span class="diff-lno">2</span>
+      <span class="diff-indicator ctx">&nbsp;</span>
+      <span class="diff-content">import { useState } from 'react'</span>
+    </div>
+    <div class="diff-line remove">
+      <span class="diff-lno">3</span><span class="diff-lno"></span>
+      <span class="diff-indicator remove">-</span>
+      <span class="diff-content">const TIMEOUT = 3000</span>
+    </div>
+    <div class="diff-line remove">
+      <span class="diff-lno">4</span><span class="diff-lno"></span>
+      <span class="diff-indicator remove">-</span>
+      <span class="diff-content">const MAX_RETRIES = 3</span>
+    </div>
+    <div class="diff-line add">
+      <span class="diff-lno"></span><span class="diff-lno">3</span>
+      <span class="diff-indicator add">+</span>
+      <span class="diff-content">const TIMEOUT = 5000</span>
+    </div>
+    <div class="diff-line add">
+      <span class="diff-lno"></span><span class="diff-lno">4</span>
+      <span class="diff-indicator add">+</span>
+      <span class="diff-content">const MAX_RETRIES = 5</span>
+    </div>
+    <div class="diff-line add">
+      <span class="diff-lno"></span><span class="diff-lno">5</span>
+      <span class="diff-indicator add">+</span>
+      <span class="diff-content">const BACKOFF_MS = 1000</span>
+    </div>
+    <div class="diff-line">
+      <span class="diff-lno">5</span><span class="diff-lno">6</span>
+      <span class="diff-indicator ctx">&nbsp;</span>
+      <span class="diff-content"></span>
+    </div>
+    <div class="diff-line">
+      <span class="diff-lno">6</span><span class="diff-lno">7</span>
+      <span class="diff-indicator ctx">&nbsp;</span>
+      <span class="diff-content">export function App() {</span>
+    </div>
+    <div class="diff-line">
+      <span class="diff-lno">7</span><span class="diff-lno">8</span>
+      <span class="diff-indicator ctx">&nbsp;</span>
+      <span class="diff-content">  return &lt;div /&gt;</span>
+    </div>
+
+    <div class="diff-hunk-header">@@ -20,4 +21,6 @@ function retryFetch() {</div>
+    <div class="diff-line">
+      <span class="diff-lno">20</span><span class="diff-lno">21</span>
+      <span class="diff-indicator ctx">&nbsp;</span>
+      <span class="diff-content">  const response = await fetch(url)</span>
+    </div>
+    <div class="diff-line add">
+      <span class="diff-lno"></span><span class="diff-lno">22</span>
+      <span class="diff-indicator add">+</span>
+      <span class="diff-content">  if (!response.ok) {</span>
+    </div>
+    <div class="diff-line add">
+      <span class="diff-lno"></span><span class="diff-lno">23</span>
+      <span class="diff-indicator add">+</span>
+      <span class="diff-content">    throw new Error(`HTTP ${response.status}`)</span>
+    </div>
+    <div class="diff-line add">
+      <span class="diff-lno"></span><span class="diff-lno">24</span>
+      <span class="diff-indicator add">+</span>
+      <span class="diff-content">  }</span>
+    </div>
+    <div class="diff-line">
+      <span class="diff-lno">21</span><span class="diff-lno">25</span>
+      <span class="diff-indicator ctx">&nbsp;</span>
+      <span class="diff-content">  return response.json()</span>
+    </div>
+    <div class="diff-line">
+      <span class="diff-lno">22</span><span class="diff-lno">26</span>
+      <span class="diff-indicator ctx">&nbsp;</span>
+      <span class="diff-content">}</span>
+    </div>
+  </div>
+</div>
+
+<div class="scenario" style="margin-top:16px;">
+  <h3>Empty states</h3>
+  <div class="demo-row gap-16" style="align-items:flex-start;">
+    <div>
+      <div class="demo-label mb-4">No file selected</div>
+      <div class="diff-viewer" style="width:300px;">
+        <div class="diff-empty">Select a file to view changes</div>
+      </div>
+    </div>
+    <div>
+      <div class="demo-label mb-4">Loading</div>
+      <div class="diff-viewer" style="width:300px;">
+        <div class="diff-empty">Loading diff&hellip;</div>
+      </div>
+    </div>
+    <div>
+      <div class="demo-label mb-4">No changes</div>
+      <div class="diff-viewer" style="width:300px;">
+        <div class="diff-empty">No changes in this file</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="scenario" style="margin-top:16px;">
+  <h3>Binary file</h3>
+  <div class="demo-row gap-16" style="align-items:flex-start;">
+    <div>
+      <div class="demo-label mb-4">Generic binary</div>
+      <div class="diff-viewer" style="width:280px;">
+        <div class="binary-block">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#45475a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M7 21h10a2 2 0 002-2V9.414a2 2 0 00-.586-1.414l-4.414-4.414A2 2 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+          </svg>
+          <div>
+            <div class="title">Binary File</div>
+            <div class="meta">application/octet-stream</div>
+            <div class="meta">2.0 KB</div>
+          </div>
+          <div style="font-size:10px;">Binary file contents are not displayed as text.</div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="demo-label mb-4">Image preview</div>
+      <div class="diff-viewer" style="width:280px;">
+        <div style="padding:16px; text-align:center;">
+          <div style="background:#313244; border-radius:8px; padding:24px; display:inline-block;">
+            <div style="width:96px; height:64px; background:linear-gradient(135deg, #e06080, #50b0e0, #80d070); border-radius:4px; box-shadow:0 4px 12px rgba(0,0,0,0.3);"></div>
+          </div>
+          <div style="margin-top:8px; font-size:11px; color:#6c7086;">image/png &bull; 24.5 KB</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
+<!-- CommitGraph SVG rendering script -->
+<script>
+const LANE_COLORS = [
+  'var(--color-graph-0)', 'var(--color-graph-1)', 'var(--color-graph-2)',
+  'var(--color-graph-3)', 'var(--color-graph-4)', 'var(--color-graph-5)',
+]
+const COL_W = 14, NODE_R = 4, STROKE_W = 2, LEFT_PAD = 10, ROW_H = 28
+
+function laneColor(lane) { return LANE_COLORS[lane % LANE_COLORS.length] }
+function laneX(lane) { return LEFT_PAD + lane * COL_W }
+
+function computeGraphRows(commits) {
+  const result = new Map()
+  let lanes = []
+  for (const commit of commits) {
+    const hash = commit.shortHash
+    const isRoot = commit.parents.length === 0
+    let myLane = lanes.indexOf(hash)
+    const isHead = myLane === -1
+    if (isHead) {
+      const free = lanes.indexOf(null)
+      if (free !== -1) { myLane = free; lanes[myLane] = hash }
+      else { myLane = lanes.length; lanes.push(hash) }
+    }
+    const forkLanes = []
+    for (let i = 0; i < lanes.length; i++) {
+      if (i !== myLane && lanes[i] === hash) { forkLanes.push(i); lanes[i] = null }
+    }
+    const activeBeforeSet = new Set(lanes.map((v, i) => (v !== null ? i : -1)).filter(i => i !== -1))
+    const connections = []
+    for (const forkLane of forkLanes) {
+      connections.push({ fromLane: myLane, toLane: forkLane, color: laneColor(forkLane), type: 'fork' })
+    }
+    if (isRoot) lanes[myLane] = null
+    else lanes[myLane] = commit.parents[0]
+    const mergeLanes = []
+    for (let p = 1; p < commit.parents.length; p++) {
+      const parentHash = commit.parents[p]
+      let pLane = lanes.indexOf(parentHash)
+      if (pLane === -1) {
+        const free = lanes.indexOf(null)
+        if (free !== -1) { pLane = free; lanes[pLane] = parentHash }
+        else { pLane = lanes.length; lanes.push(parentHash) }
+      }
+      mergeLanes.push(pLane)
+    }
+    const activeAfterSet = new Set(lanes.map((v, i) => (v !== null ? i : -1)).filter(i => i !== -1))
+    connections.push({ fromLane: myLane, toLane: myLane, color: laneColor(myLane), type: 'straight' })
+    for (const lane of activeBeforeSet) {
+      if (lane === myLane) continue
+      if (activeAfterSet.has(lane)) {
+        connections.push({ fromLane: lane, toLane: lane, color: laneColor(lane), type: 'straight' })
+      }
+    }
+    for (const pLane of mergeLanes) {
+      connections.push({ fromLane: pLane, toLane: myLane, color: laneColor(pLane), type: 'merge' })
+    }
+    result.set(hash, { lane: myLane, activeLanes: [...activeAfterSet], connections, isRoot, isHead })
+  }
+  return result
+}
+
+function renderRow(graphRow, maxLane) {
+  const w = LEFT_PAD + (maxLane + 1) * COL_W + 4
+  const h = ROW_H, midY = h / 2
+  const cx = laneX(graphRow.lane)
+  let svg = ''
+  for (const conn of graphRow.connections) {
+    const x1 = laneX(conn.fromLane), x2 = laneX(conn.toLane)
+    if (conn.type === 'straight') {
+      const isRootOwnLane = graphRow.isRoot && conn.fromLane === graphRow.lane && conn.toLane === graphRow.lane
+      const isHeadOwnLane = graphRow.isHead && conn.fromLane === graphRow.lane && conn.toLane === graphRow.lane
+      svg += `<line x1="${x1}" y1="${isHeadOwnLane ? midY : 0}" x2="${x2}" y2="${isRootOwnLane ? midY : h}" stroke="${conn.color}" stroke-width="${STROKE_W}"/>`
+    } else if (conn.type === 'merge') {
+      svg += `<path d="M ${cx} ${midY} C ${cx} ${midY + h * 0.4}, ${x1} ${h - h * 0.1}, ${x1} ${h}" fill="none" stroke="${conn.color}" stroke-width="${STROKE_W}"/>`
+    } else if (conn.type === 'fork') {
+      svg += `<path d="M ${x2} 0 C ${x2} ${h * 0.4}, ${cx} ${midY - h * 0.1}, ${cx} ${midY}" fill="none" stroke="${conn.color}" stroke-width="${STROKE_W}"/>`
+    }
+  }
+  svg += `<circle cx="${cx}" cy="${midY}" r="${NODE_R}" fill="${laneColor(graphRow.lane)}" stroke="var(--color-bg-panel)" stroke-width="1.5"/>`
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" style="display:block">${svg}</svg>`
+}
+
+function c(shortHash, parents, subject) {
+  return { shortHash, parents, subject: subject || shortHash }
+}
+
+const scenarios = [
+  { title: '1. Linear chain (A &rarr; B &rarr; C)', desc: 'Three commits in a single lane. A is head, C is root.',
+    commits: [c('aaa', ['bbb'], 'HEAD commit'), c('bbb', ['ccc'], 'Middle'), c('ccc', [], 'Initial commit')] },
+  { title: '2. Simple branch + merge', desc: 'M merges B1 (first parent) and B2 (second parent).',
+    commits: [c('M', ['B1', 'B2'], 'Merge branch'), c('B1', ['base'], 'Main work'), c('B2', ['base'], 'Branch work'), c('base', [], 'Initial')] },
+  { title: '3. Parallel branches', desc: 'Two independent heads converging at root.',
+    commits: [c('A1', ['root'], 'Branch 1 head'), c('A2', ['root'], 'Branch 2 head'), c('root', [], 'Root')] },
+  { title: '4. Octopus merge (3 parents)', desc: 'M merges p1, p2, and p3.',
+    commits: [c('M', ['p1', 'p2', 'p3'], 'Octopus merge'), c('p1', [], 'Parent 1'), c('p2', [], 'Parent 2'), c('p3', [], 'Parent 3')] },
+  { title: '5. Pass-through lanes', desc: 'Side branch passes through while main progresses.',
+    commits: [c('A', ['B'], 'Main head'), c('C', ['D'], 'Side head'), c('B', ['E'], 'Main cont.'), c('D', ['E'], 'Side cont.'), c('E', [], 'Root')] },
+  { title: '6. Single commit', desc: 'Solitary commit — both head and root.',
+    commits: [c('solo', [], 'Only commit')] },
+  { title: '7. Deep linear chain (10 commits)', desc: 'All on lane 0.',
+    commits: Array.from({length: 10}, (_, i) => c(`c${i}`, i < 9 ? [`c${i+1}`] : [], `Commit ${i}`)) },
+  { title: '8. Lane reuse after merge', desc: 'Freed lane reused by new head.',
+    commits: [c('M', ['m1', 's1'], 'Merge'), c('m1', ['base'], 'Main'), c('s1', ['base'], 'Side'), c('base', [], 'Base'), c('new', ['b2'], 'New head'), c('b2', [], 'New base')] },
+  { title: '9. Complex: feature + hotfix', desc: 'Main, feature, and hotfix branches active simultaneously.',
+    commits: [c('merge', ['feat2', 'hot1'], 'Merge hotfix'), c('feat2', ['feat1'], 'Feature pt2'), c('hot1', ['main2'], 'Hotfix'), c('feat1', ['main1'], 'Feature pt1'), c('main2', ['main1'], 'Main cont.'), c('main1', [], 'Initial')] }
+]
+
+const app = document.getElementById('commit-graph-app')
+for (const scenario of scenarios) {
+  const rows = computeGraphRows(scenario.commits)
+  let maxLane = 0
+  for (const row of rows.values()) {
+    if (row.lane > maxLane) maxLane = row.lane
+    for (const l of row.activeLanes) { if (l > maxLane) maxLane = l }
+  }
+  let html = `<div class="scenario"><h3>${scenario.title}</h3><p>${scenario.desc}</p><div class="rows">`
+  for (const commit of scenario.commits) {
+    const graphRow = rows.get(commit.shortHash)
+    html += `<div class="row">${renderRow(graphRow, maxLane)}<span class="label">${commit.subject}</span></div>`
+  }
+  html += `</div></div>`
+  app.innerHTML += html
+}
+</script>
+</body>
+</html>
