@@ -145,7 +145,6 @@ export function computeGraphRows(commits: GitCommit[]): Map<string, GraphRow> {
     // Pass-throughs for other lanes that were active before and remain active
     for (const lane of activeBeforeSet) {
       if (lane === myLane) continue
-      if (mergeLanes.includes(lane)) continue // will be drawn as merge curve
       if (activeAfterSet.has(lane)) {
         connections.push({
           fromLane: lane,
