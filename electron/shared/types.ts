@@ -273,4 +273,5 @@ export interface SystemAPI {
   getMergeConflictSyntaxHighlighting(): Promise<boolean>
   setMergeConflictSyntaxHighlighting(enabled: boolean): void
   highlightCode(code: string, lang: string, theme: 'light' | 'dark'): Promise<string>
+  openGitLog(): void
 }

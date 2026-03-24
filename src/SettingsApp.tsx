@@ -167,7 +167,7 @@ function SettingsLayout() {
                 </label>
               </div>
               <p className="text-[10px] text-neutral-500 dark:text-neutral-400 ml-6 -mt-2">
-                Enable Prism.js syntax highlighting in the merge conflict tool blocks.
+                Enable syntax highlighting in the merge conflict tool blocks.
               </p>
             </div>
           </div>
@@ -296,8 +296,15 @@ function SettingsLayout() {
                   Verbose git logging
                 </label>
               </div>
-              <p className="text-[10px] text-neutral-500 dark:text-neutral-400 ml-6 -mt-2">
+              <p className="text-[10px] text-neutral-500 dark:text-neutral-400 ml-6 -mt-2 flex items-center gap-2">
                 Log every git command to a local file for troubleshooting.
+                <button 
+                  onClick={() => window.system.openGitLog()}
+                  className="text-accent-violet hover:underline cursor-pointer bg-transparent border-none p-0 inline-flex items-center gap-1"
+                >
+                  Open git.log
+                  <Icon name="link" size={10} />
+                </button>
               </p>
             </div>
           </div>

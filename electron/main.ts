@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain, Menu } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, Menu, shell } from 'electron'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import fs from 'node:fs'
@@ -503,6 +503,15 @@ app.whenReady().then(() => {
 
   ipcMain.on('system:quit', () => {
     app.quit()
+  })
+
+  ipcMain.on('system:openGitLog', () => {
+    const logPath = path.join(app.getPath('userData'), 'git.log')
+    if (fs.existsSync(logPath)) {
+      shell.openPath(logPath)
+    } else {
+      dialog.showErrorBox('File not found', 'The git.log file does not exist yet. Try performing some git operations first.')
+    }
   })
 
   ipcMain.on('system:reload', () => {

@@ -145,6 +145,7 @@ const systemApi: SystemAPI = {
   setMergeConflictSyntaxHighlighting: (enabled: boolean) => ipcRenderer.send('system:setMergeConflictSyntaxHighlighting', enabled),
   highlightCode: (code: string, lang: string, theme: 'light' | 'dark') =>
     ipcRenderer.invoke('system:highlightCode', code, lang, theme),
+  openGitLog: () => ipcRenderer.send('system:openGitLog'),
 }
 
 contextBridge.exposeInMainWorld('git', gitApi)
