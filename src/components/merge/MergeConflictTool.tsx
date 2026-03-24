@@ -2,23 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { Modal } from '../ui/Modal'
 import { Icon } from '../ui/Icon'
 import { StatusEntry, ConflictDetails, ConflictBlock } from '../../../electron/shared/types'
-import Prism from 'prismjs'
-import 'prismjs/themes/prism-tomorrow.css'
 import { getLanguage } from '../../utils/syntax'
-
-// Standard languages for Prism
-import 'prismjs/components/prism-clike'
-import 'prismjs/components/prism-javascript'
-import 'prismjs/components/prism-typescript'
-import 'prismjs/components/prism-jsx'
-import 'prismjs/components/prism-tsx'
-import 'prismjs/components/prism-json'
-import 'prismjs/components/prism-markdown'
-import 'prismjs/components/prism-css'
-import 'prismjs/components/prism-bash'
-import 'prismjs/components/prism-python'
-import 'prismjs/components/prism-rust'
-import 'prismjs/components/prism-go'
 
 interface CodeBlockProps {
   content: string
@@ -28,24 +12,35 @@ interface CodeBlockProps {
 }
 
 function HighlightedCode({ content, language, enabled, className }: CodeBlockProps) {
-  const codeRef = useRef<HTMLElement>(null)
+  const [highlightedHtml, setHighlightedHtml] = useState<string | null>(null)
+  const [theme, setTheme] = useState<'light' | 'dark'>('dark')
 
   useEffect(() => {
-    if (enabled && codeRef.current) {
-      Prism.highlightElement(codeRef.current)
+    window.system.getTheme().then(setTheme)
+    window.system.onThemeUpdate(setTheme)
+  }, [])
+
+  useEffect(() => {
+    let isMounted = true
+    if (enabled && content) {
+      window.system.highlightCode(content, language, theme).then(html => {
+        if (isMounted) setHighlightedHtml(html)
+      })
+    } else {
+      setHighlightedHtml(null)
     }
-  }, [content, enabled, language])
+    return () => { isMounted = false }
+  }, [content, enabled, language, theme])
 
   if (!enabled) {
     return <pre className={className}>{content}</pre>
   }
 
   return (
-    <pre className={`${className} language-${language}`}>
-      <code ref={codeRef} className={`language-${language}`}>
-        {content}
-      </code>
-    </pre>
+    <div 
+      className={`${className} shiki-code-block`}
+      dangerouslySetInnerHTML={{ __html: highlightedHtml || `<pre><code>${content}</code></pre>` }} 
+    />
   )
 }
 
@@ -56,15 +51,24 @@ interface ResolutionEditorProps {
 }
 
 function ResolutionEditor({ value, onChange, language }: ResolutionEditorProps) {
-  const codeRef = useRef<HTMLElement>(null)
+  const [highlightedHtml, setHighlightedHtml] = useState<string | null>(null)
+  const [theme, setTheme] = useState<'light' | 'dark'>('dark')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const preRef = useRef<HTMLPreElement>(null)
+  const preRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (codeRef.current) {
-      Prism.highlightElement(codeRef.current)
-    }
-  }, [value, language])
+    window.system.getTheme().then(setTheme)
+    window.system.onThemeUpdate(setTheme)
+  }, [])
+
+  useEffect(() => {
+    let isMounted = true
+    const textToHighlight = value + (value.endsWith('\n') ? ' ' : '')
+    window.system.highlightCode(textToHighlight, language, theme).then(html => {
+      if (isMounted) setHighlightedHtml(html)
+    })
+    return () => { isMounted = false }
+  }, [value, language, theme])
 
   const syncScroll = () => {
     if (textareaRef.current && preRef.current) {
@@ -75,11 +79,12 @@ function ResolutionEditor({ value, onChange, language }: ResolutionEditorProps) 
 
   return (
     <div className="resolution-editor-container">
-      <pre ref={preRef} className={`language-${language} resolution-highlight-overlay`} aria-hidden="true">
-        <code ref={codeRef} className={`language-${language}`}>
-          {value + (value.endsWith('\n') ? ' ' : '')}
-        </code>
-      </pre>
+      <div 
+        ref={preRef} 
+        className="resolution-highlight-overlay shiki-editor-overlay" 
+        aria-hidden="true"
+        dangerouslySetInnerHTML={{ __html: highlightedHtml || `<pre><code>${value}</code></pre>` }} 
+      />
       <textarea
         ref={textareaRef}
         value={value}
@@ -124,6 +129,51 @@ export function MergeConflictTool({
   const scrollAreaRef = useRef<HTMLDivElement>(null)
 
   // Update selected file when conflicts list changes (e.g. after a resolution)
+  const [resolutionHeight, setResolutionHeight] = useState(300)
+  const [isResizing, setIsResizing] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  const startResizing = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    setIsResizing(true)
+  }, [])
+
+  const stopResizing = useCallback(() => {
+    setIsResizing(false)
+  }, [])
+
+  const resize = useCallback((e: MouseEvent) => {
+    if (isResizing && containerRef.current) {
+      const containerRect = containerRef.current.getBoundingClientRect()
+      // Bottom pane height = container bottom - current mouse Y - header padding/offset
+      const newHeight = containerRect.bottom - e.clientY
+      // Bounds: at least 150px, but leave at least 150px for the blocks viewer
+      if (newHeight > 100 && newHeight < containerRect.height - 150) {
+        setResolutionHeight(newHeight)
+      }
+    }
+  }, [isResizing])
+
+  useEffect(() => {
+    if (isResizing) {
+      document.body.style.cursor = 'row-resize'
+      document.body.style.userSelect = 'none'
+      window.addEventListener('mousemove', resize)
+      window.addEventListener('mouseup', stopResizing)
+    } else {
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+      window.removeEventListener('mousemove', resize)
+      window.removeEventListener('mouseup', stopResizing)
+    }
+    return () => {
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+      window.removeEventListener('mousemove', resize)
+      window.removeEventListener('mouseup', stopResizing)
+    }
+  }, [isResizing, resize, stopResizing])
+
   useEffect(() => {
     if (conflicts.length > 0 && (!selectedFile || !conflicts.some(c => c.path === selectedFile))) {
       setSelectedFile(conflicts[0].path)
@@ -336,7 +386,7 @@ export function MergeConflictTool({
         </div>
       </div>
       
-      <div className="conflict-editor-area">
+      <div className="conflict-editor-area" ref={containerRef}>
         {loading ? (
           <div className="tool-loading">
             <Icon name="git" size={24} className="git-spinner opacity-50" />
@@ -390,7 +440,12 @@ export function MergeConflictTool({
               {details.blocks.map((block, idx) => renderBlockRow(block, idx))}
             </div>
             
-            <div className="resolution-editor">
+            <div 
+              className={`horizontal-resizer ${isResizing ? 'dragging' : ''}`}
+              onMouseDown={startResizing}
+            />
+
+            <div className="resolution-editor" style={{ height: resolutionHeight, flex: 'none' }}>
               <div className="pane-header">Resolved Result (Live Preview / Edit)</div>
               <ResolutionEditor 
                 value={resolvedContent} 
@@ -551,16 +606,14 @@ export function MergeConflictTool({
         }
         
         .blocks-viewer-container {
-          flex: 2;
+          flex: 1;
           overflow: auto;
           background: #FAFAFA;
-          border-bottom: 1px solid #E4E4E7;
           display: flex;
           flex-direction: column;
         }
         .dark .blocks-viewer-container {
           background: #111216;
-          border-bottom-color: #2A2A30;
         }
         
         .blocks-viewer-container::-webkit-scrollbar {
@@ -728,16 +781,32 @@ export function MergeConflictTool({
         }
         
         .resolution-editor {
-          flex: 1;
           display: flex;
           flex-direction: column;
           background: #FFFFFF;
-          min-height: 250px;
-          border-top: 1px solid #E4E4E7;
+          position: relative;
         }
         .dark .resolution-editor {
           background: #0F1115;
+        }
+
+        .horizontal-resizer {
+          height: 8px; /* Thicker spacer as requested */
+          cursor: row-resize;
+          background: #E4E4E7;
+          flex-shrink: 0;
+          transition: background 0.2s;
+          z-index: 30;
+          border-top: 1px solid #D4D4D8;
+          border-bottom: 1px solid #D4D4D8;
+        }
+        .dark .horizontal-resizer {
+          background: #1F2024;
           border-top-color: #2A2A30;
+          border-bottom-color: #2A2A30;
+        }
+        .horizontal-resizer:hover, .horizontal-resizer.dragging {
+          background: #3b82f6; /* color-primary-500 */
         }
 
         .resolution-editor-container {
@@ -783,10 +852,45 @@ export function MergeConflictTool({
           pointer-events: none;
         }
 
-        /* Prism override for resolution editor */
-        .resolution-highlight-overlay.language-none,
-        .resolution-highlight-overlay[class*="language-"] {
+        /* Shiki override for resolution editor */
+        .resolution-highlight-overlay.shiki-editor-overlay {
           background: transparent;
+        }
+        
+        .shiki-code-block {
+          display: contents;
+        }
+
+        .shiki-code-block pre {
+          margin: 0 !important;
+          padding: 12px 16px !important;
+          background: transparent !important;
+          font-family: var(--font-mono) !important;
+          font-size: 0.75rem !important;
+          line-height: 1.6 !important;
+          white-space: pre !important;
+          font-weight: 400 !important;
+          box-sizing: border-box !important;
+          overflow: hidden !important;
+        }
+
+        .shiki-editor-overlay pre {
+          margin: 0 !important;
+          padding: 0 !important;
+          background: transparent !important;
+          font-family: var(--font-mono) !important;
+          font-size: 0.85rem !important;
+          line-height: 1.6 !important;
+          white-space: pre-wrap !important;
+          word-break: break-all !important;
+          font-weight: 400 !important;
+          box-sizing: border-box !important;
+        }
+
+        .shiki-code-block pre code, .shiki-editor-overlay pre code {
+          font-family: inherit !important;
+          font-size: inherit !important;
+          line-height: inherit !important;
         }
 
         .pane-header {
@@ -807,24 +911,6 @@ export function MergeConflictTool({
           border-bottom-color: #2A2A30;
         }
 
-        /* Prism tomorrow theme overrides for better integration */
-        code[class*="language-"],
-        pre[class*="language-"] {
-          font-family: var(--font-mono) !important;
-          font-size: 0.75rem !important;
-          text-shadow: none !important;
-        }
-
-        .side-pane pre[class*="language-"] {
-          margin: 0;
-          padding: 12px 16px;
-          background: transparent !important;
-        }
-
-        .stable-text.language-none,
-        .stable-text[class*="language-"] {
-          background: transparent;
-        }
       `}</style>
     </div>
   )

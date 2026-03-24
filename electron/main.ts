@@ -2,6 +2,7 @@ import { app, BrowserWindow, dialog, ipcMain, Menu } from 'electron'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import fs from 'node:fs'
+import { highlightCode, initHighlighter } from './services/syntax/highlighter'
 import { getLog } from './services/git/gitLog'
 import { getAllRefs } from './services/git/gitRefs'
 import { getCommitDetail, getFileTree, getFileContent } from './services/git/gitShow'
@@ -136,7 +137,7 @@ function loadSettings(): AppSettings {
     commitSortOrder: 'topo',
     verboseLogging: false,
     showStashes: false,
-    mergeConflictSyntaxHighlighting: false
+    mergeConflictSyntaxHighlighting: true
   }
 
   try {
@@ -162,6 +163,7 @@ const currentSettings = loadSettings()
 initGitLogger(app.getPath('userData'))
 setGitExecutable(currentSettings.gitPath || 'system')
 setVerboseLogging(!!currentSettings.verboseLogging)
+initHighlighter().catch(console.error) // Initialize syntax highlighter early
 
 function setGitPath(path: string) {
   currentSettings.gitPath = path
@@ -493,6 +495,10 @@ app.whenReady().then(() => {
   ipcMain.on('system:setMergeConflictSyntaxHighlighting', (_event, enabled: boolean) => {
     currentSettings.mergeConflictSyntaxHighlighting = enabled
     saveSettings(currentSettings)
+  })
+
+  ipcMain.handle('system:highlightCode', (_event, code: string, lang: string, theme: string) => {
+    return highlightCode(code, lang, theme as 'light' | 'dark')
   })
 
   ipcMain.on('system:quit', () => {

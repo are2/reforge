@@ -14,10 +14,9 @@
     "test": "mocha tests/**/*.test.cjs --timeout 60000"
   },
   "dependencies": {
-    "@types/prismjs": "^1.26.6",
-    "prismjs": "^1.30.0",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "shiki": "^4.0.2"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.2.1",

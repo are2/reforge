@@ -143,6 +143,8 @@ const systemApi: SystemAPI = {
   setShowStashes: (enabled: boolean) => ipcRenderer.send('system:setShowStashes', enabled),
   getMergeConflictSyntaxHighlighting: () => ipcRenderer.invoke('system:getMergeConflictSyntaxHighlighting'),
   setMergeConflictSyntaxHighlighting: (enabled: boolean) => ipcRenderer.send('system:setMergeConflictSyntaxHighlighting', enabled),
+  highlightCode: (code: string, lang: string, theme: 'light' | 'dark') =>
+    ipcRenderer.invoke('system:highlightCode', code, lang, theme),
 }
 
 contextBridge.exposeInMainWorld('git', gitApi)

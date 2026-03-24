@@ -272,4 +272,5 @@ export interface SystemAPI {
   setShowStashes(enabled: boolean): void
   getMergeConflictSyntaxHighlighting(): Promise<boolean>
   setMergeConflictSyntaxHighlighting(enabled: boolean): void
+  highlightCode(code: string, lang: string, theme: 'light' | 'dark'): Promise<string>
 }

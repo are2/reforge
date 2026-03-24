@@ -1,24 +1,6 @@
-import { useEffect, useRef } from 'react'
-import Prism from 'prismjs'
-import 'prismjs/themes/prism-tomorrow.css'
-
-// Standard languages
-import 'prismjs/components/prism-clike'
-import 'prismjs/components/prism-javascript'
-import 'prismjs/components/prism-typescript'
-import 'prismjs/components/prism-jsx'
-import 'prismjs/components/prism-tsx'
-import 'prismjs/components/prism-json'
-import 'prismjs/components/prism-markdown'
-import 'prismjs/components/prism-css'
-import 'prismjs/components/prism-bash'
-import 'prismjs/components/prism-python'
-import 'prismjs/components/prism-rust'
-import 'prismjs/components/prism-go'
-
+import { useEffect, useState } from 'react'
 import type { FileContent } from '../../../electron/shared/types'
 import { Icon } from '../ui/Icon'
-
 import { getLanguage } from '../../utils/syntax'
 
 interface FileContentViewProps {
@@ -27,13 +9,26 @@ interface FileContentViewProps {
 }
 
 export function FileContentView({ content, loading }: FileContentViewProps) {
-  const codeRef = useRef<HTMLElement>(null)
+  const [highlightedHtml, setHighlightedHtml] = useState<string | null>(null)
+  const [theme, setTheme] = useState<'light' | 'dark'>('dark')
 
   useEffect(() => {
-    if (codeRef.current && content && !content.isBinary) {
-      Prism.highlightElement(codeRef.current)
+    window.system.getTheme().then(setTheme)
+    window.system.onThemeUpdate(setTheme)
+  }, [])
+
+  useEffect(() => {
+    let isMounted = true
+    if (content && !content.isBinary) {
+      const lang = getLanguage(content.mimeType, content.path)
+      window.system.highlightCode(content.content, lang, theme).then(html => {
+        if (isMounted) setHighlightedHtml(html)
+      })
+    } else {
+      setHighlightedHtml(null)
     }
-  }, [content])
+    return () => { isMounted = false }
+  }, [content, theme])
 
   if (loading) {
     return (
@@ -84,15 +79,37 @@ export function FileContentView({ content, loading }: FileContentViewProps) {
     )
   }
 
-  const lang = getLanguage(content.mimeType, content.path)
-
   return (
-    <div className="h-full overflow-auto bg-neutral-0 dark:bg-neutral-900 text-[0.8rem] leading-tight">
-      <pre className={`language-${lang} m-0 h-full p-3 font-mono`}>
-        <code ref={codeRef} className={`language-${lang}`}>
-          {content.content}
-        </code>
-      </pre>
+    <div className="h-full overflow-auto bg-neutral-0 dark:bg-neutral-900 text-[0.8rem] leading-tight shiki-wrapper">
+      {highlightedHtml ? (
+        <div 
+          className="h-full"
+          dangerouslySetInnerHTML={{ __html: highlightedHtml }} 
+        />
+      ) : (
+        <pre className="m-0 h-full p-3 font-mono whitespace-pre opacity-50">
+          <code>{content.content}</code>
+        </pre>
+      )}
+      <style>{`
+        .shiki-wrapper pre {
+          margin: 0 !important;
+          padding: 12px !important;
+          background: transparent !important;
+          height: 100% !important;
+          font-family: var(--font-mono) !important;
+          font-size: 0.8rem !important;
+          line-height: 1.25 !important;
+          font-weight: 400 !important;
+          box-sizing: border-box !important;
+          overflow-x: auto !important;
+        }
+        .shiki-wrapper pre code {
+          font-family: inherit !important;
+          font-size: inherit !important;
+          line-height: inherit !important;
+        }
+      `}</style>
     </div>
   )
 }
