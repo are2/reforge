@@ -2,7 +2,7 @@ import { Icon } from './Icon'
 
 interface BranchChipProps {
   name: string
-  type?: 'local' | 'remote' | 'tag'
+  type?: 'local' | 'remote' | 'tag' | 'stash'
   color?: string
   onContextMenu?: (e: React.MouseEvent) => void
 }
@@ -18,11 +18,13 @@ export function BranchChip({ name, type = 'local', color, onContextMenu }: Branc
         : 'bg-primary-100 text-primary-800 dark:bg-primary-800 dark:text-neutral-50'
       : type === 'tag'
       ? 'bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-200'
+      : type === 'stash'
+      ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200'
       : color
         ? 'bg-transparent'
         : 'border border-neutral-200 text-accent-blue dark:border-neutral-600 dark:text-accent-blue'
 
-  const icon = type === 'remote' ? '☁' : type === 'tag' ? 'tag' : ''
+  const icon = type === 'remote' ? '☁' : type === 'tag' ? 'tag' : type === 'stash' ? 'stash' : ''
 
   const style: React.CSSProperties = {}
   if (color) {
@@ -44,8 +46,8 @@ export function BranchChip({ name, type = 'local', color, onContextMenu }: Branc
     >
       {icon && (
         <span className="flex items-center">
-          {type === 'tag' ? (
-            <Icon name="tag" size={10} className="mr-0.5" />
+          {type === 'tag' || type === 'stash' ? (
+            <Icon name={type as any} size={10} className="mr-0.5" />
           ) : (
             <span className="text-[0.5rem]">{icon}</span>
           )}

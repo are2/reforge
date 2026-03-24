@@ -204,7 +204,7 @@ export async function getTags(repoPath: string): Promise<GitTag[]> {
   const result = await runGit(repoPath, [
     'tag',
     '--sort=-creatordate',
-    '--format=%(objectname:short)\t%(refname:short)',
+    '--format=%(if)%(*objectname)%(then)%(*objectname)%(else)%(objectname)%(end)\t%(refname:short)',
   ])
 
   if (result.exitCode !== 0 || !result.stdout.trim()) return []
@@ -222,18 +222,18 @@ export async function getTags(repoPath: string): Promise<GitTag[]> {
 // ── Stashes ────────────────────────────────────────────────────
 
 export async function getStashes(repoPath: string): Promise<GitStash[]> {
-  const result = await runGit(repoPath, ['stash', 'list', '--format=%gd\t%gs'])
+  const result = await runGit(repoPath, ['stash', 'list', '--format=%gd\t%H\t%gs'])
   if (result.exitCode !== 0 || !result.stdout.trim()) return []
-
   return result.stdout
     .trim()
     .split('\n')
     .filter(Boolean)
     .map((line) => {
-      const [ref, ...msgParts] = line.split('\t')
+      const [ref, hash, ...msgParts] = line.split('\t')
       const indexMatch = ref.match(/\{(\d+)\}/)
       return {
         index: indexMatch ? parseInt(indexMatch[1], 10) : 0,
+        hash,
         message: msgParts.join('\t') || ref,
       }
     })

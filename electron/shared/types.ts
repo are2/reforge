@@ -29,7 +29,7 @@ export interface GitVersionInfo {
 
 export interface GitRef {
   name: string
-  type: 'local' | 'remote' | 'tag' | 'head'
+  type: 'local' | 'remote' | 'tag' | 'head' | 'stash'
 }
 
 export interface GitCommit {
@@ -93,6 +93,7 @@ export interface GitTag {
 export interface GitStash {
   index: number
   message: string
+  hash: string
 }
 
 export interface GitSubmodule {

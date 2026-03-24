@@ -412,9 +412,11 @@ function BranchItem({
 function TagItem({
   tag,
   onRemoveTag,
+  onSelect,
 }: {
   tag: GitTag
   onRemoveTag: (name: string, push: boolean) => Promise<void>
+  onSelect: (hash: string) => void
 }) {
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -462,13 +464,14 @@ function TagItem({
 
   return (
     <div>
-      <div
+      <button
+        onClick={() => onSelect(tag.hash)}
         onContextMenu={handleContextMenu}
         className="flex w-full items-center gap-1 py-0.5 pl-5 pr-2 text-xs text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-700 dark:hover:text-neutral-50"
       >
         <Icon name="tag" size={12} className="text-neutral-400 dark:text-neutral-500" />
         <span className="truncate">{tag.name}</span>
-      </div>
+      </button>
 
       {contextMenu && createPortal(
         <div
@@ -710,11 +713,13 @@ function StashItem({
   onApply,
   onPop,
   onDrop,
+  onSelect,
 }: {
   stash: GitStash
   onApply: (index: number) => Promise<void>
   onPop: (index: number) => Promise<void>
   onDrop: (index: number) => Promise<void>
+  onSelect: (hash: string) => void
 }) {
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -741,13 +746,14 @@ function StashItem({
 
   return (
     <div>
-      <div
+      <button
+        onClick={() => onSelect(stash.hash)}
         onContextMenu={handleContextMenu}
-        className="flex w-full items-center gap-1 py-0.5 pl-5 pr-2 text-xs text-neutral-500 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700 cursor-default"
+        className="flex w-full items-center gap-1 py-0.5 pl-5 pr-2 text-xs text-neutral-500 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700"
       >
         <Icon name="archive" size={12} className="text-neutral-400 dark:text-neutral-500" />
         <span className="truncate">{stash.message}</span>
-      </div>
+      </button>
 
       {contextMenu && createPortal(
         <div
@@ -922,7 +928,7 @@ export function LeftSidebar({
             </div>
           ) : tags.length > 0 ? (
             tags.map((tag) => (
-              <TagItem key={tag.name} tag={tag} onRemoveTag={onRemoveTag} />
+              <TagItem key={tag.name} tag={tag} onRemoveTag={onRemoveTag} onSelect={onBranchSelect} />
             ))
           ) : (
             <div className="px-5 py-1 text-[0.625rem] italic text-neutral-400">
@@ -944,6 +950,7 @@ export function LeftSidebar({
                 onApply={onStashApply} 
                 onPop={onStashPop} 
                 onDrop={onStashDrop} 
+                onSelect={onBranchSelect}
               />
             ))
           ) : (

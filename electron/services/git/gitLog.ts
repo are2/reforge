@@ -1,5 +1,6 @@
 import { runGitOrThrow } from './gitRunner'
-import type { GitCommit, GitPerson, GitRef, FileChange, FileStatus } from '../../shared/types'
+import type { GitCommit, GitPerson, GitRef, FileChange, FileStatus, GitStash } from '../../shared/types'
+import { getStashes } from './gitRefs'
 
 // ── Format string ──────────────────────────────────────────────
 // Each commit is separated by a record-separator (RS, \x1e).
@@ -68,6 +69,10 @@ function parseRefDecoration(raw: string): GitRef[] {
       return { name: trimmed.replace('refs/remotes/', ''), type: 'remote' as const }
     }
 
+    if (trimmed === 'refs/stash') {
+      return { name: 'stash', type: 'stash' as const }
+    }
+
     return { name: trimmed, type: 'local' as const }
   })
 }
@@ -127,11 +132,24 @@ export async function getLog(
   showStashes = false
 ): Promise<GitCommit[]> {
   const orderFlag = order === 'topo' ? '--topo-order' : '--date-order'
-  const refsFlag = showStashes ? '--all' : '--branches --remotes --tags HEAD'
+  
+  let refsToLog = showStashes ? ['--all'] : ['--branches', '--remotes', '--tags', 'HEAD']
+  let allStashes: GitStash[] = []
+  
+  if (showStashes) {
+    try {
+      allStashes = await getStashes(repoPath)
+      // Add all stash hashes to the log command to ensure they are walked
+      const stashHashes = allStashes.map(s => s.hash)
+      refsToLog.push(...stashHashes)
+    } catch (err) {
+      console.error('Failed to get stashes for log:', err)
+    }
+  }
 
   const stdout = await runGitOrThrow(repoPath, [
     'log',
-    ...refsFlag.split(' '),
+    ...refsToLog,
     orderFlag,
     `--max-count=${limit}`,
     `--pretty=format:${RECORD_SEP}${LOG_FORMAT}${FIELD_SEP}`,
@@ -160,6 +178,18 @@ export async function getLog(
     const parents = parentStr.trim() ? parentStr.trim().split(' ') : []
     const refs = parseRefDecoration(refDecoration)
     const files = parseNameStatus(nameStatusBlock)
+
+    // Manually inject stash names (e.g., stash@{1}) if this commit matches a stash
+    if (showStashes && allStashes.length > 0) {
+      const matchingStashes = allStashes.filter(s => s.hash === hash)
+      for (const s of matchingStashes) {
+        // Avoid duplicate stash refs (git might have already added 'refs/stash' for stash@{0})
+        const stashRefName = `stash@{${s.index}}`
+        if (!refs.some(r => r.name === stashRefName || (r.name === 'stash' && s.index === 0))) {
+           refs.push({ name: stashRefName, type: 'stash' })
+        }
+      }
+    }
 
     commits.push({
       hash,

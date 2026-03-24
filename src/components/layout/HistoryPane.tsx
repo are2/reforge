@@ -346,7 +346,7 @@ function CommitRow({
                 key={ref.name} 
                 name={ref.name} 
                 type={ref.type === 'tag' ? 'tag' : ref.type === 'head' ? 'local' : ref.type} 
-                color={ref.type !== 'tag' ? laneColor(graphRow.lane) : undefined}
+                color={ref.type !== 'tag' && ref.type !== 'stash' ? laneColor(graphRow.lane) : undefined}
                 onContextMenu={(e) => {
                   if (ref.type === 'tag') {
                     e.preventDefault()
