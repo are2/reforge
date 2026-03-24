@@ -38,11 +38,7 @@ export function DiffViewer({ diff, loading }: DiffViewerProps) {
       const lang = getLanguage('', diff.path)
       window.system.highlightLines(allLines, lang, theme).then(results => {
         if (isMounted) {
-          // Strip Shiki's <pre><code> wrappers
-          const stripped = results.map(html => 
-            html.replace(/^<pre[^>]*><code[^>]*>/, '').replace(/<\/code><\/pre>$/, '')
-          )
-          setHighlightedLines(stripped)
+          setHighlightedLines(results)
         }
       })
     } else {

@@ -38,8 +38,36 @@ export async function highlightCode(code: string, lang: string, theme: 'light' |
 }
 
 export async function highlightLines(lines: string[], lang: string, theme: 'light' | 'dark'): Promise<string[]> {
-  // To avoid hundreds of separate highlight calls, we highlight the entire block 
-  // but use Shiki's internal tokenization if possible, or just individual calls 
-  // if they are fast enough. For now, individual calls but in a single promise all.
-  return Promise.all(lines.map(line => highlightCode(line, lang, theme)))
+  const h = await initHighlighter()
+  const shikiTheme = theme === 'light' ? 'catppuccin-latte' : 'catppuccin-mocha'
+  
+  let shikiLang = lang.toLowerCase()
+  if (shikiLang === 'clike' || shikiLang === 'cs') shikiLang = 'csharp'
+  if (!h.getLoadedLanguages().includes(shikiLang)) {
+    shikiLang = 'text'
+  }
+
+  const fullCode = lines.join('\n')
+  const tokenLines = h.codeToTokens(fullCode, {
+    lang: shikiLang as any,
+    theme: shikiTheme as any
+  }).tokens
+
+  // Convert each line of tokens to a string of HTML spans
+  return tokenLines.map(lineTokens => {
+    let html = '<span class="line">'
+    for (const token of lineTokens) {
+      const escaped = token.content
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;')
+      
+      const style = token.color ? `style="color: ${token.color}"` : ''
+      html += `<span ${style}>${escaped}</span>`
+    }
+    html += '</span>'
+    return html
+  })
 }
